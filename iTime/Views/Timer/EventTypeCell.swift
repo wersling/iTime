@@ -17,7 +17,7 @@ struct EventTypeCell: View {
     
     var body: some View {
         Button(action: onTap) {
-            VStack(spacing: 8) {
+            VStack(spacing: 6) {
                 // 图标
                 if let category = eventType.category {
                     Image(systemName: category.icon)
@@ -31,6 +31,31 @@ struct EventTypeCell: View {
                     .foregroundColor(isActive ? .white : .primary)
                     .lineLimit(2)
                     .multilineTextAlignment(.center)
+                
+                // 活动状态指示
+                if isActive {
+                    HStack(spacing: 3) {
+                        Circle()
+                            .fill(Color.white)
+                            .frame(width: 4, height: 4)
+                            .scaleEffect(isActive ? 1.0 : 0.5)
+                            .animation(
+                                Animation.easeInOut(duration: 0.8)
+                                    .repeatForever(autoreverses: true),
+                                value: isActive
+                            )
+                        
+                        Text("进行中")
+                            .font(.system(size: 9, weight: .medium))
+                            .foregroundColor(.white)
+                    }
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(
+                        Capsule()
+                            .fill(Color.white.opacity(0.3))
+                    )
+                }
             }
             .frame(maxWidth: .infinity, minHeight: 80)
             .padding(8)
@@ -40,8 +65,9 @@ struct EventTypeCell: View {
             )
             .overlay(
                 RoundedRectangle(cornerRadius: Constants.UI.cornerRadius)
-                    .stroke(eventType.displayColor, lineWidth: isActive ? 2 : 1)
+                    .stroke(eventType.displayColor, lineWidth: isActive ? 3 : 1)
             )
+            .shadow(color: isActive ? eventType.displayColor.opacity(0.3) : .clear, radius: 8, x: 0, y: 4)
         }
         .contextMenu {
             if let onDelete = onDelete {

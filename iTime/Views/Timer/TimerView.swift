@@ -43,10 +43,8 @@ struct TimerView: View {
                     // 按分类展示事件类型
                     ForEach(categories) { category in
                         let categoryEventTypes = eventTypes.filter { $0.category?.id == category.id }
-                        // 过滤掉当前正在计时的事件
-                        let displayEventTypes = categoryEventTypes.filter { $0.id != timerService.currentRecord?.eventType?.id }
                         
-                        if !displayEventTypes.isEmpty {
+                        if !categoryEventTypes.isEmpty {
                             VStack(alignment: .leading, spacing: 12) {
                                 // 分类标题
                                 HStack {
@@ -64,10 +62,10 @@ struct TimerView: View {
                                     GridItem(.flexible()),
                                     GridItem(.flexible())
                                 ], spacing: Constants.UI.gridSpacing) {
-                                    ForEach(displayEventTypes) { eventType in
+                                    ForEach(categoryEventTypes) { eventType in
                                         EventTypeCell(
                                             eventType: eventType,
-                                            isActive: false,
+                                            isActive: timerService.currentRecord?.eventType?.id == eventType.id,
                                             onTap: {
                                                 handleEventTap(eventType)
                                             },
