@@ -16,6 +16,7 @@ enum StatisticsPeriod: String, CaseIterable {
     case year = "年"
 }
 
+// 类别统计
 struct EventStatistics: Identifiable {
     let id = UUID()
     let category: EventCategory
@@ -23,6 +24,14 @@ struct EventStatistics: Identifiable {
     let recordCount: Int
     
     var percentage: Double = 0.0  // 百分比，由外部计算
+}
+
+// 事件统计（用于图表）
+struct EventTypeStatistics: Identifiable {
+    let id = UUID()
+    let eventType: EventType
+    let totalDuration: TimeInterval
+    let recordCount: Int
 }
 
 @MainActor

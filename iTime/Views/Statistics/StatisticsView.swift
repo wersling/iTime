@@ -27,7 +27,27 @@ struct StatisticsView: View {
         return (try? modelContext.fetch(descriptor)) ?? []
     }
     
-    // 计算统计数据（按类别统计）
+    // 计算事件统计（按事件统计，用于图表）
+    private var eventTypeStatistics: [EventTypeStatistics] {
+        var statDict: [UUID: (eventType: EventType, duration: TimeInterval, count: Int)] = [:]
+        
+        for record in timeRecords {
+            guard let eventType = record.eventType else { continue }
+            
+            if var stat = statDict[eventType.id] {
+                stat.duration += record.duration
+                stat.count += 1
+                statDict[eventType.id] = stat
+            } else {
+                statDict[eventType.id] = (eventType, record.duration, 1)
+            }
+        }
+        
+        let stats = statDict.map { EventTypeStatistics(eventType: $0.value.eventType, totalDuration: $0.value.duration, recordCount: $0.value.count) }
+        return stats.sorted { $0.totalDuration > $1.totalDuration }
+    }
+    
+    // 计算类别统计（按类别统计，用于列表）
     private var statistics: [EventStatistics] {
         var statDict: [UUID: (category: EventCategory, duration: TimeInterval, count: Int)] = [:]
         
@@ -118,9 +138,9 @@ struct StatisticsView: View {
                     )
                     .padding(.horizontal)
                     
-                    // 图表
-                    if !statistics.isEmpty {
-                        ChartView(statistics: statistics)
+                    // 图表（显示事件级别统计）
+                    if !eventTypeStatistics.isEmpty {
+                        EventTypeChartView(statistics: eventTypeStatistics)
                             .frame(height: 250)
                             .padding()
                     }
