@@ -18,13 +18,6 @@
 	<string>iTime需要发送通知以提醒您长时间进行的活动</string>
 	<key>CFBundleIcons</key>
 	<dict>
-		<key>CFBundlePrimaryIcon</key>
-		<dict>
-			<key>CFBundleIconFiles</key>
-			<array>
-				<string>AppIcon</string>
-			</array>
-		</dict>
 		<key>CFBundleAlternateIcons</key>
 		<dict>
 			<key>AppIcon-Recording</key>
@@ -33,7 +26,16 @@
 				<array>
 					<string>AppIcon-Recording</string>
 				</array>
+				<key>UIPrerenderedIcon</key>
+				<false/>
 			</dict>
+		</dict>
+		<key>CFBundlePrimaryIcon</key>
+		<dict>
+			<key>CFBundleIconFiles</key>
+			<array/>
+			<key>UIPrerenderedIcon</key>
+			<false/>
 		</dict>
 	</dict>
 </dict>

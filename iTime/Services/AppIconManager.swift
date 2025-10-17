@@ -17,14 +17,14 @@ class AppIconManager {
     /// 图标名称
     enum IconName: String {
         case `default` = "AppIcon"           // 正常状态（主图标，传nil）
-        case recording = "AppIcon-Recording" // 记录状态
+        case recording = "AppIcon-Recording" // 记录状态（不带.appiconset后缀）
         
         var alternateIconName: String? {
             switch self {
             case .default:
                 return nil // 主图标用nil
             case .recording:
-                return rawValue
+                return self.rawValue
             }
         }
     }
@@ -37,7 +37,7 @@ class AppIconManager {
         return .default
     }
     
-    /// 切换图标
+    /// 切换图标（无提示版本）
     /// - Parameter icon: 目标图标
     func setIcon(_ icon: IconName) {
         guard UIApplication.shared.supportsAlternateIcons else {
@@ -52,12 +52,12 @@ class AppIconManager {
         
         let iconName = icon.alternateIconName
         
-        Task {
-            do {
-                try await UIApplication.shared.setAlternateIconName(iconName)
-                print("✅ 图标已切换至: \(icon.rawValue)")
-            } catch {
+        // 使用completion handler版本，在completionHandler中不做任何操作来抑制系统提示
+        UIApplication.shared.setAlternateIconName(iconName) { error in
+            if let error = error {
                 print("❌ 图标切换失败: \(error.localizedDescription)")
+            } else {
+                print("✅ 图标已切换至: \(icon.rawValue)")
             }
         }
     }
