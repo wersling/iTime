@@ -109,6 +109,43 @@ struct SettingsView: View {
                     Text("完成的有效记录会自动同步到选中的日历")
                 }
                 
+                // 数据管理
+                Section {
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Image(systemName: "icloud.fill")
+                                .foregroundColor(.blue)
+                            Text("iCloud 同步")
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                        }
+                        
+                        Text("您的所有时间记录都会自动同步到 iCloud，即使删除应用后重新安装，数据也会自动恢复。")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    .padding(.vertical, 4)
+                    
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Image(systemName: "shield.fill")
+                                .foregroundColor(.green)
+                            Text("数据安全")
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                        }
+                        
+                        Text("• 所有数据存储在您的 iCloud 账户中\n• 仅限您的设备访问\n• 支持多设备同步\n• 删除应用不会删除数据")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    .padding(.vertical, 4)
+                } header: {
+                    Text("数据备份")
+                } footer: {
+                    Text("确保您已登录 iCloud 账户并开启 iCloud Drive，数据将自动备份。")
+                }
+                
                 // 关于
                 Section {
                     HStack {
@@ -116,6 +153,20 @@ struct SettingsView: View {
                         Spacer()
                         Text("1.0.0")
                             .foregroundColor(.secondary)
+                    }
+                    
+                    Button {
+                        if let url = URL(string: UIApplication.openSettingsURLString) {
+                            UIApplication.shared.open(url)
+                        }
+                    } label: {
+                        HStack {
+                            Text("打开系统设置")
+                            Spacer()
+                            Image(systemName: "arrow.up.forward.app")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
                     }
                 } header: {
                     Text("关于")

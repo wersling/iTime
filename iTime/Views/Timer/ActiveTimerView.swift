@@ -33,9 +33,9 @@ struct ActiveTimerView: View {
                 .foregroundColor(eventType.displayColor)
             
             // 持续时长文字
-            Text(elapsedTime.formattedDuration)
-                .font(.subheadline)
-                .foregroundColor(.secondary)
+            // Text(elapsedTime.formattedDuration)
+            //     .font(.subheadline)
+            //     .foregroundColor(.secondary)
             
             // 停止按钮
             Button(action: onStop) {

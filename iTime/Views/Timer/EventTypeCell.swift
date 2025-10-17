@@ -27,7 +27,7 @@ struct EventTypeCell: View {
                 
                 // 名称
                 Text(eventType.name)
-                    .font(.caption)
+                    .font(.system(size: 14, weight: .medium))
                     .foregroundColor(isActive ? .white : .primary)
                     .lineLimit(2)
                     .multilineTextAlignment(.center)
