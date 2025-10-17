@@ -6,5 +6,15 @@
 	<array>
 		<string>remote-notification</string>
 	</array>
+	<key>NSCalendarsUsageDescription</key>
+	<string>iTime需要访问日历以同步您的时间记录</string>
+	<key>NSCalendarsFullAccessUsageDescription</key>
+	<string>iTime需要完整访问日历以同步您的时间记录</string>
+	<key>NSCalendarsWriteOnlyAccessUsageDescription</key>
+	<string>iTime需要写入日历以保存您的时间记录</string>
+	<key>NSRemindersUsageDescription</key>
+	<string>iTime需要访问提醒事项以提供更好的时间管理体验</string>
+	<key>NSUserNotificationsUsageDescription</key>
+	<string>iTime需要发送通知以提醒您长时间进行的活动</string>
 </dict>
 </plist>

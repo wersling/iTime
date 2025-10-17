@@ -1,0 +1,45 @@
+//
+//  EventCategory.swift
+//  iTime
+//
+//  Created by Sean Zou on 2025/10/17.
+//
+
+import Foundation
+import SwiftData
+import SwiftUI
+
+@Model
+final class EventCategory {
+    @Attribute(.unique) var id: UUID
+    var name: String
+    var colorHex: String  // 存储颜色的十六进制值
+    var icon: String  // SF Symbol 名称
+    var sortOrder: Int  // 排序顺序
+    
+    @Relationship(deleteRule: .cascade, inverse: \EventType.category)
+    var eventTypes: [EventType]?
+    
+    init(id: UUID = UUID(), name: String, colorHex: String, icon: String, sortOrder: Int = 0) {
+        self.id = id
+        self.name = name
+        self.colorHex = colorHex
+        self.icon = icon
+        self.sortOrder = sortOrder
+    }
+    
+    var color: Color {
+        Color(hex: colorHex) ?? .blue
+    }
+    
+    // 预设类别
+    static let presetCategories: [EventCategory] = [
+        EventCategory(name: "工作", colorHex: "#3B82F6", icon: "briefcase.fill", sortOrder: 0),
+        EventCategory(name: "学习", colorHex: "#10B981", icon: "book.fill", sortOrder: 1),
+        EventCategory(name: "娱乐", colorHex: "#F59E0B", icon: "gamecontroller.fill", sortOrder: 2),
+        EventCategory(name: "运动", colorHex: "#EF4444", icon: "figure.run", sortOrder: 3),
+        EventCategory(name: "休息", colorHex: "#8B5CF6", icon: "bed.double.fill", sortOrder: 4),
+        EventCategory(name: "其他", colorHex: "#6B7280", icon: "ellipsis.circle.fill", sortOrder: 5)
+    ]
+}
+
