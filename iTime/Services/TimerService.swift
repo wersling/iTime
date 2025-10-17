@@ -38,6 +38,12 @@ class TimerService: ObservableObject {
     private func restoreActiveTimer() {
         guard let modelContext = modelContext else { return }
         
+        // 如果已经有活动计时器，不要重复恢复
+        if currentRecord != nil {
+            print("⚠️ 已有活动计时器，跳过恢复")
+            return
+        }
+        
         // 从 UserDefaults 读取活动记录ID
         guard let savedRecordIdString = UserDefaults.standard.string(forKey: activeRecordIdKey),
               let savedRecordId = UUID(uuidString: savedRecordIdString) else {
@@ -60,16 +66,11 @@ class TimerService: ObservableObject {
         // 恢复计时器状态
         currentRecord = record
         
-        // 计算已经过的时间
-        if let lastUpdateTime = UserDefaults.standard.object(forKey: lastUpdateTimeKey) as? Date {
-            let elapsedSinceLastUpdate = Date().timeIntervalSince(lastUpdateTime)
-            let totalElapsed = Date().timeIntervalSince(record.startTime)
-            elapsedTime = totalElapsed
-        } else {
-            elapsedTime = Date().timeIntervalSince(record.startTime)
-        }
+        // 基于startTime计算已过时间，而不是使用lastUpdateTime
+        elapsedTime = Date().timeIntervalSince(record.startTime)
         
-        // 重启内部计时器
+        // 确保先停止旧Timer，再启动新的
+        stopInternalTimer()
         startInternalTimer()
         
         // 重新安排通知
@@ -100,6 +101,9 @@ class TimerService: ObservableObject {
         if let current = currentRecord {
             stopTimer()
         }
+        
+        // 确保先停止旧的Timer
+        stopInternalTimer()
         
         // 创建新记录
         let record = TimeRecord(startTime: Date(), eventType: eventType)
@@ -170,10 +174,16 @@ class TimerService: ObservableObject {
     
     // 内部计时器
     private func startInternalTimer() {
+        // 确保先停止旧的Timer，避免累积
+        stopInternalTimer()
+        
         timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
             guard let self = self else { return }
             Task { @MainActor in
-                self.elapsedTime += 1
+                // 基于startTime实时计算，而不是累加（避免误差累积）
+                if let startTime = self.currentRecord?.startTime {
+                    self.elapsedTime = Date().timeIntervalSince(startTime)
+                }
                 
                 // 每10秒更新一次持久化时间戳
                 if Int(self.elapsedTime) % 10 == 0 {
@@ -184,9 +194,14 @@ class TimerService: ObservableObject {
                 self.checkHourlyNotification()
             }
         }
+        
+        print("⏱️ 计时器已启动")
     }
     
     private func stopInternalTimer() {
+        if timer != nil {
+            print("⏹️ 停止旧计时器")
+        }
         timer?.invalidate()
         timer = nil
     }

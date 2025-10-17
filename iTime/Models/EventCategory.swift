@@ -36,10 +36,12 @@ final class EventCategory {
     static let presetCategories: [EventCategory] = [
         EventCategory(name: "工作", colorHex: "#3B82F6", icon: "briefcase.fill", sortOrder: 0),
         EventCategory(name: "学习", colorHex: "#10B981", icon: "book.fill", sortOrder: 1),
-        EventCategory(name: "娱乐", colorHex: "#F59E0B", icon: "gamecontroller.fill", sortOrder: 2),
-        EventCategory(name: "运动", colorHex: "#EF4444", icon: "figure.run", sortOrder: 3),
-        EventCategory(name: "休息", colorHex: "#8B5CF6", icon: "bed.double.fill", sortOrder: 4),
-        EventCategory(name: "其他", colorHex: "#6B7280", icon: "ellipsis.circle.fill", sortOrder: 5)
+        EventCategory(name: "家庭", colorHex: "#EC4899", icon: "house.fill", sortOrder: 2),
+        EventCategory(name: "教育", colorHex: "#14B8A6", icon: "graduationcap.fill", sortOrder: 3),
+        EventCategory(name: "娱乐", colorHex: "#F59E0B", icon: "gamecontroller.fill", sortOrder: 4),
+        EventCategory(name: "运动", colorHex: "#EF4444", icon: "figure.run", sortOrder: 5),
+        EventCategory(name: "休息", colorHex: "#8B5CF6", icon: "bed.double.fill", sortOrder: 6),
+        EventCategory(name: "其他", colorHex: "#6B7280", icon: "ellipsis.circle.fill", sortOrder: 7)
     ]
 }
 
