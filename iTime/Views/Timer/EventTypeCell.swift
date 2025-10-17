@@ -84,7 +84,7 @@ struct EventTypeCell: View {
                 onDelete?()
             }
         } message: {
-            Text("确定要删除「\(eventType.name)」吗？相关的时间记录将会保留。")
+            Text("确定要删除「\(eventType.name)」吗？相关的时间记录将会一起删除。")
         }
     }
 }
