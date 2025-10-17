@@ -16,5 +16,25 @@
 	<string>iTime需要访问提醒事项以提供更好的时间管理体验</string>
 	<key>NSUserNotificationsUsageDescription</key>
 	<string>iTime需要发送通知以提醒您长时间进行的活动</string>
+	<key>CFBundleIcons</key>
+	<dict>
+		<key>CFBundlePrimaryIcon</key>
+		<dict>
+			<key>CFBundleIconFiles</key>
+			<array>
+				<string>AppIcon</string>
+			</array>
+		</dict>
+		<key>CFBundleAlternateIcons</key>
+		<dict>
+			<key>AppIcon-Recording</key>
+			<dict>
+				<key>CFBundleIconFiles</key>
+				<array>
+					<string>AppIcon-Recording</string>
+				</array>
+			</dict>
+		</dict>
+	</dict>
 </dict>
 </plist>
