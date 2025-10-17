@@ -18,7 +18,7 @@ enum StatisticsPeriod: String, CaseIterable {
 
 struct EventStatistics: Identifiable {
     let id = UUID()
-    let eventType: EventType
+    let category: EventCategory
     let totalDuration: TimeInterval
     let recordCount: Int
     
@@ -72,22 +72,23 @@ class StatisticsViewModel: ObservableObject {
     }
     
     private func calculateStatistics() {
-        var statDict: [UUID: (eventType: EventType, duration: TimeInterval, count: Int)] = [:]
+        var statDict: [UUID: (category: EventCategory, duration: TimeInterval, count: Int)] = [:]
         
         for record in timeRecords {
-            guard let eventType = record.eventType else { continue }
+            guard let eventType = record.eventType,
+                  let category = eventType.category else { continue }
             
-            if var stat = statDict[eventType.id] {
+            if var stat = statDict[category.id] {
                 stat.duration += record.duration
                 stat.count += 1
-                statDict[eventType.id] = stat
+                statDict[category.id] = stat
             } else {
-                statDict[eventType.id] = (eventType, record.duration, 1)
+                statDict[category.id] = (category, record.duration, 1)
             }
         }
         
         // 转换为统计数组
-        var stats = statDict.map { EventStatistics(eventType: $0.value.eventType, totalDuration: $0.value.duration, recordCount: $0.value.count) }
+        var stats = statDict.map { EventStatistics(category: $0.value.category, totalDuration: $0.value.duration, recordCount: $0.value.count) }
         
         // 计算百分比
         let totalDuration = stats.reduce(0) { $0 + $1.totalDuration }

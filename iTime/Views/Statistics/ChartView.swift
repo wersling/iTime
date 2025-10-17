@@ -19,9 +19,9 @@ struct ChartView: View {
             Chart(statistics) { stat in
                 BarMark(
                     x: .value("时长", stat.totalDuration / 60),  // 转换为分钟
-                    y: .value("事件", stat.eventType.name)
+                    y: .value("类别", stat.category.name)
                 )
-                .foregroundStyle(stat.eventType.displayColor)
+                .foregroundStyle(stat.category.color)
                 .annotation(position: .trailing) {
                     Text(stat.totalDuration.formattedDuration)
                         .font(.caption2)
@@ -47,12 +47,9 @@ struct ChartView: View {
     let category1 = EventCategory(name: "工作", colorHex: "#3B82F6", icon: "briefcase.fill")
     let category2 = EventCategory(name: "学习", colorHex: "#10B981", icon: "book.fill")
     
-    let eventType1 = EventType(name: "编程", category: category1)
-    let eventType2 = EventType(name: "阅读", category: category2)
-    
     let stats = [
-        EventStatistics(eventType: eventType1, totalDuration: 3600, recordCount: 3),
-        EventStatistics(eventType: eventType2, totalDuration: 1800, recordCount: 2)
+        EventStatistics(category: category1, totalDuration: 3600, recordCount: 3),
+        EventStatistics(category: category2, totalDuration: 1800, recordCount: 2)
     ]
     
     return ChartView(statistics: stats)
