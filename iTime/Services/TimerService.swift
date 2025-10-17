@@ -8,6 +8,7 @@
 import Foundation
 import SwiftData
 import Combine
+import UIKit
 
 @MainActor
 class TimerService: ObservableObject {
@@ -21,6 +22,11 @@ class TimerService: ObservableObject {
     private var modelContext: ModelContext?
     private var notificationService = NotificationService.shared
     private var calendarService = CalendarService.shared
+    
+    // 触觉反馈生成器
+    private let lightImpact = UIImpactFeedbackGenerator(style: .light)
+    private let mediumImpact = UIImpactFeedbackGenerator(style: .medium)
+    private let heavyImpact = UIImpactFeedbackGenerator(style: .heavy)
     
     // UserDefaults keys for persistence
     private let activeRecordIdKey = "activeRecordId"
@@ -97,9 +103,12 @@ class TimerService: ObservableObject {
     
     // 开始计时
     func startTimer(for eventType: EventType) {
-        // 如果已有活动记录，先停止
-        if let current = currentRecord {
-            stopTimer()
+        // 触觉反馈：中等震动
+        mediumImpact.impactOccurred()
+        
+        // 如果已有活动记录，先停止（不触发震动）
+        if currentRecord != nil {
+            stopTimer(triggerHaptic: false)
         }
         
         // 确保先停止旧的Timer
@@ -126,8 +135,16 @@ class TimerService: ObservableObject {
     }
     
     // 停止计时
-    func stopTimer(minValidDuration: TimeInterval = Constants.Settings.defaultMinDuration, calendarSyncEnabled: Bool = false, selectedCalendarId: String? = nil) {
+    func stopTimer(minValidDuration: TimeInterval = Constants.Settings.defaultMinDuration, calendarSyncEnabled: Bool = false, selectedCalendarId: String? = nil, triggerHaptic: Bool = true) {
         guard let record = currentRecord else { return }
+        
+        // 触觉反馈：重震动（双震）
+        if triggerHaptic {
+            heavyImpact.impactOccurred()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+                self?.heavyImpact.impactOccurred()
+            }
+        }
         
         stopInternalTimer()
         
