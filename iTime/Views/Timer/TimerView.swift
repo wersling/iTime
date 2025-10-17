@@ -11,40 +11,38 @@ import SwiftData
 struct TimerView: View {
     @Environment(\.modelContext) private var modelContext
     @StateObject private var timerService = TimerService.shared
-    @State private var viewModel: TimerViewModel?
+    
+    // 使用 @Query 直接查询数据，确保实时更新
+    @Query(sort: \EventCategory.sortOrder) private var categories: [EventCategory]
+    @Query(sort: \EventType.createdAt) private var eventTypes: [EventType]
     
     @AppStorage(Constants.Settings.minValidDuration) private var minValidDuration: Double = Constants.Settings.defaultMinDuration
     @AppStorage(Constants.Settings.calendarSyncEnabled) private var calendarSyncEnabled: Bool = false
     @AppStorage(Constants.Settings.selectedCalendarId) private var selectedCalendarId: String = ""
     
     @State private var showingAddEventType = false
+    @State private var selectedCategory: EventCategory?
     
     var body: some View {
-        Group {
-            if let viewModel = viewModel {
-                NavigationStack {
-                    ScrollView {
-                        VStack(spacing: 20) {
-                            // 当前计时器
-                            if let currentRecord = timerService.currentRecord,
-                               let eventType = currentRecord.eventType {
-                                ActiveTimerView(
-                                    eventType: eventType,
-                                    elapsedTime: timerService.elapsedTime,
-                                    formattedTime: timerService.formattedElapsedTime,
-                                    onStop: {
-                                        viewModel.stopTimer(
-                                            minValidDuration: minValidDuration,
-                                            calendarSyncEnabled: calendarSyncEnabled,
-                                            selectedCalendarId: selectedCalendarId.isEmpty ? nil : selectedCalendarId
-                                        )
-                                    }
-                                )
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: 20) {
+                    // 当前计时器
+                    if let currentRecord = timerService.currentRecord,
+                       let eventType = currentRecord.eventType {
+                        ActiveTimerView(
+                            eventType: eventType,
+                            elapsedTime: timerService.elapsedTime,
+                            formattedTime: timerService.formattedElapsedTime,
+                            onStop: {
+                                stopTimer()
                             }
-                            
-                            // 按分类展示事件类型
-                            ForEach(viewModel.categories) { category in
-                                let categoryEventTypes = viewModel.eventTypes.filter { $0.category?.id == category.id }
+                        )
+                    }
+                    
+                    // 按分类展示事件类型
+                    ForEach(categories) { category in
+                        let categoryEventTypes = eventTypes.filter { $0.category?.id == category.id }
                         
                         if !categoryEventTypes.isEmpty {
                             VStack(alignment: .leading, spacing: 12) {
@@ -69,81 +67,114 @@ struct TimerView: View {
                                             eventType: eventType,
                                             isActive: timerService.currentRecord?.eventType?.id == eventType.id,
                                             onTap: {
-                                                if timerService.currentRecord?.eventType?.id == eventType.id {
-                                                    // 点击当前活动事件，停止计时
-                                                    viewModel.stopTimer(
-                                                        minValidDuration: minValidDuration,
-                                                        calendarSyncEnabled: calendarSyncEnabled,
-                                                        selectedCalendarId: selectedCalendarId.isEmpty ? nil : selectedCalendarId
-                                                    )
-                                                } else if timerService.currentRecord != nil {
-                                                    // 切换到其他事件
-                                                    viewModel.switchEventType(
-                                                        to: eventType,
-                                                        minValidDuration: minValidDuration,
-                                                        calendarSyncEnabled: calendarSyncEnabled,
-                                                        selectedCalendarId: selectedCalendarId.isEmpty ? nil : selectedCalendarId
-                                                    )
-                                                } else {
-                                                    // 开始新计时
-                                                    viewModel.startTimer(for: eventType)
-                                                }
+                                                handleEventTap(eventType)
                                             },
                                             onDelete: {
-                                                viewModel.deleteEventType(eventType)
+                                                deleteEventType(eventType)
                                             }
                                         )
                                     }
                                     
                                     // 添加按钮
                                     AddEventTypeButton {
-                                        viewModel.selectedCategory = category
+                                        selectedCategory = category
                                         showingAddEventType = true
                                     }
                                 }
                                 .padding(.horizontal)
                             }
-                            }
-                        }
-                    }
-                    .padding(.vertical)
-                }
-                .navigationTitle("时间记录")
-                .toolbar {
-                    ToolbarItem(placement: .navigationBarTrailing) {
-                        Button {
-                            showingAddEventType = true
-                        } label: {
-                            Image(systemName: "plus.circle.fill")
                         }
                     }
                 }
-                .sheet(isPresented: $showingAddEventType) {
-                    AddEventTypeSheet(
-                        categories: viewModel.categories,
-                        preselectedCategory: viewModel.selectedCategory,
-                        onAdd: { name, category, color in
-                            viewModel.addEventType(name: name, category: category, customColor: color)
-                            showingAddEventType = false
-                        },
-                        onCancel: {
-                            showingAddEventType = false
-                        }
-                    )
+                .padding(.vertical)
+            }
+            .navigationTitle("时间记录")
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button {
+                        showingAddEventType = true
+                    } label: {
+                        Image(systemName: "plus.circle.fill")
+                    }
                 }
             }
-            } else {
-                ProgressView()
+            .sheet(isPresented: $showingAddEventType) {
+                AddEventTypeSheet(
+                    categories: Array(categories),
+                    preselectedCategory: selectedCategory,
+                    onAdd: { name, category, color in
+                        addEventType(name: name, category: category, customColor: color)
+                        showingAddEventType = false
+                    },
+                    onCancel: {
+                        showingAddEventType = false
+                    }
+                )
             }
-        }
-        .onAppear {
-            if viewModel == nil {
+            .onAppear {
                 // 配置timer service
                 timerService.configure(modelContext: modelContext)
-                // 创建viewModel
-                viewModel = TimerViewModel(modelContext: modelContext, timerService: timerService)
+                // 初始化预设分类
+                initializeCategories()
             }
         }
+    }
+    
+    // MARK: - Helper Methods
+    
+    private func initializeCategories() {
+        // 如果没有分类，初始化预设分类
+        if categories.isEmpty {
+            for preset in EventCategory.presetCategories {
+                modelContext.insert(preset)
+            }
+            try? modelContext.save()
+        }
+    }
+    
+    private func addEventType(name: String, category: EventCategory, customColor: String?) {
+        let eventType = EventType(name: name, customColorHex: customColor, category: category)
+        modelContext.insert(eventType)
+        try? modelContext.save()
+    }
+    
+    private func deleteEventType(_ eventType: EventType) {
+        modelContext.delete(eventType)
+        try? modelContext.save()
+    }
+    
+    private func handleEventTap(_ eventType: EventType) {
+        if timerService.currentRecord?.eventType?.id == eventType.id {
+            // 点击当前活动事件，停止计时
+            stopTimer()
+        } else if timerService.currentRecord != nil {
+            // 切换到其他事件
+            switchEventType(to: eventType)
+        } else {
+            // 开始新计时
+            startTimer(for: eventType)
+        }
+    }
+    
+    private func startTimer(for eventType: EventType) {
+        timerService.startTimer(for: eventType)
+    }
+    
+    private func stopTimer() {
+        timerService.stopTimer(
+            minValidDuration: minValidDuration,
+            calendarSyncEnabled: calendarSyncEnabled,
+            selectedCalendarId: selectedCalendarId.isEmpty ? nil : selectedCalendarId
+        )
+    }
+    
+    private func switchEventType(to eventType: EventType) {
+        timerService.switchEventType(
+            to: eventType,
+            minValidDuration: minValidDuration,
+            calendarSyncEnabled: calendarSyncEnabled,
+            selectedCalendarId: selectedCalendarId.isEmpty ? nil : selectedCalendarId
+        )
     }
 }
 

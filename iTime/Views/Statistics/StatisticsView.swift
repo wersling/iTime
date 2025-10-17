@@ -10,32 +10,75 @@ import SwiftData
 
 struct StatisticsView: View {
     @Environment(\.modelContext) private var modelContext
-    @State private var viewModel: StatisticsViewModel?
     
+    @State private var selectedPeriod: StatisticsPeriod = .day
+    @State private var selectedDate: Date = Date()
     @State private var showingRecordList = false
     
+    // 动态查询当前时间段的记录
+    private var timeRecords: [TimeRecord] {
+        let (startDate, endDate) = getPeriodRange()
+        let descriptor = FetchDescriptor<TimeRecord>(
+            predicate: #Predicate<TimeRecord> { record in
+                record.isValid && record.startTime >= startDate && record.startTime <= endDate
+            },
+            sortBy: [SortDescriptor(\.startTime, order: .reverse)]
+        )
+        return (try? modelContext.fetch(descriptor)) ?? []
+    }
+    
+    // 计算统计数据
+    private var statistics: [EventStatistics] {
+        var statDict: [UUID: (eventType: EventType, duration: TimeInterval, count: Int)] = [:]
+        
+        for record in timeRecords {
+            guard let eventType = record.eventType else { continue }
+            
+            if var stat = statDict[eventType.id] {
+                stat.duration += record.duration
+                stat.count += 1
+                statDict[eventType.id] = stat
+            } else {
+                statDict[eventType.id] = (eventType, record.duration, 1)
+            }
+        }
+        
+        var stats = statDict.map { EventStatistics(eventType: $0.value.eventType, totalDuration: $0.value.duration, recordCount: $0.value.count) }
+        
+        // 计算百分比
+        let totalDuration = stats.reduce(0) { $0 + $1.totalDuration }
+        if totalDuration > 0 {
+            stats = stats.map { stat in
+                var newStat = stat
+                newStat.percentage = stat.totalDuration / totalDuration
+                return newStat
+            }
+        }
+        
+        return stats.sorted { $0.totalDuration > $1.totalDuration }
+    }
+    
+    private var totalDuration: TimeInterval {
+        timeRecords.reduce(0) { $0 + $1.duration }
+    }
+    
     var body: some View {
-        Group {
-            if let viewModel = viewModel {
-                NavigationStack {
-                    ScrollView {
-                        VStack(spacing: 20) {
-                            // 时间段选择器
-                            Picker("时间段", selection: Binding(
-                                get: { viewModel.selectedPeriod },
-                                set: { viewModel.changePeriod(to: $0) }
-                            )) {
-                                ForEach(StatisticsPeriod.allCases, id: \.self) { period in
-                                    Text(period.rawValue).tag(period)
-                                }
-                            }
-                            .pickerStyle(.segmented)
-                            .padding(.horizontal)
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: 20) {
+                    // 时间段选择器
+                    Picker("时间段", selection: $selectedPeriod) {
+                        ForEach(StatisticsPeriod.allCases, id: \.self) { period in
+                            Text(period.rawValue).tag(period)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    .padding(.horizontal)
                     
                     // 日期导航
                     HStack {
                         Button {
-                            viewModel.previousPeriod()
+                            previousPeriod()
                         } label: {
                             Image(systemName: "chevron.left")
                                 .font(.title3)
@@ -43,13 +86,13 @@ struct StatisticsView: View {
                         
                         Spacer()
                         
-                        Text(viewModel.periodTitle)
+                        Text(periodTitle)
                             .font(.headline)
                         
                         Spacer()
                         
                         Button {
-                            viewModel.nextPeriod()
+                            nextPeriod()
                         } label: {
                             Image(systemName: "chevron.right")
                                 .font(.title3)
@@ -63,7 +106,7 @@ struct StatisticsView: View {
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                         
-                        Text(viewModel.totalDuration.formattedDuration)
+                        Text(totalDuration.formattedDuration)
                             .font(.system(size: 36, weight: .bold))
                     }
                     .padding()
@@ -75,20 +118,20 @@ struct StatisticsView: View {
                     .padding(.horizontal)
                     
                     // 图表
-                    if !viewModel.statistics.isEmpty {
-                        ChartView(statistics: viewModel.statistics)
+                    if !statistics.isEmpty {
+                        ChartView(statistics: statistics)
                             .frame(height: 250)
                             .padding()
                     }
                     
                     // 统计列表
-                    if !viewModel.statistics.isEmpty {
+                    if !statistics.isEmpty {
                         VStack(alignment: .leading, spacing: 12) {
                             Text("分类统计")
                                 .font(.headline)
                                 .padding(.horizontal)
                             
-                            ForEach(viewModel.statistics) { stat in
+                            ForEach(statistics) { stat in
                                 StatisticRow(statistic: stat)
                             }
                         }
@@ -105,7 +148,7 @@ struct StatisticsView: View {
                     }
                     
                     // 查看详细记录按钮
-                    if !viewModel.timeRecords.isEmpty {
+                    if !timeRecords.isEmpty {
                         Button {
                             showingRecordList = true
                         } label: {
@@ -123,26 +166,71 @@ struct StatisticsView: View {
                             )
                         }
                         .padding(.horizontal)
-                        }
                     }
-                    .padding(.vertical)
                 }
-                .navigationTitle("统计")
-                .sheet(isPresented: $showingRecordList) {
-                    RecordListView(records: viewModel.timeRecords)
-                }
+                .padding(.vertical)
             }
-            } else {
-                ProgressView()
+            .navigationTitle("统计")
+            .sheet(isPresented: $showingRecordList) {
+                RecordListView(records: timeRecords)
             }
         }
-        .onAppear {
-            if viewModel == nil {
-                viewModel = StatisticsViewModel(modelContext: modelContext)
-            } else {
-                viewModel?.loadData()
-            }
+    }
+    
+    // MARK: - Helper Methods
+    
+    private func getPeriodRange() -> (Date, Date) {
+        switch selectedPeriod {
+        case .day:
+            return (selectedDate.startOfDay(), selectedDate.endOfDay())
+        case .week:
+            return (selectedDate.startOfWeek(), selectedDate.endOfWeek())
+        case .month:
+            return (selectedDate.startOfMonth(), selectedDate.endOfMonth())
+        case .year:
+            return (selectedDate.startOfYear(), selectedDate.endOfYear())
         }
+    }
+    
+    private func previousPeriod() {
+        switch selectedPeriod {
+        case .day:
+            selectedDate = Calendar.current.date(byAdding: .day, value: -1, to: selectedDate)!
+        case .week:
+            selectedDate = Calendar.current.date(byAdding: .weekOfYear, value: -1, to: selectedDate)!
+        case .month:
+            selectedDate = Calendar.current.date(byAdding: .month, value: -1, to: selectedDate)!
+        case .year:
+            selectedDate = Calendar.current.date(byAdding: .year, value: -1, to: selectedDate)!
+        }
+    }
+    
+    private func nextPeriod() {
+        switch selectedPeriod {
+        case .day:
+            selectedDate = Calendar.current.date(byAdding: .day, value: 1, to: selectedDate)!
+        case .week:
+            selectedDate = Calendar.current.date(byAdding: .weekOfYear, value: 1, to: selectedDate)!
+        case .month:
+            selectedDate = Calendar.current.date(byAdding: .month, value: 1, to: selectedDate)!
+        case .year:
+            selectedDate = Calendar.current.date(byAdding: .year, value: 1, to: selectedDate)!
+        }
+    }
+    
+    private var periodTitle: String {
+        let formatter = DateFormatter()
+        switch selectedPeriod {
+        case .day:
+            formatter.dateFormat = "yyyy年M月d日"
+        case .week:
+            formatter.dateFormat = "yyyy年第w周"
+        case .month:
+            formatter.dateFormat = "yyyy年M月"
+        case .year:
+            formatter.dateFormat = "yyyy年"
+        }
+        return formatter.string(from: selectedDate)
     }
 }
 
