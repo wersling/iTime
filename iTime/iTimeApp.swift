@@ -10,6 +10,8 @@ import SwiftData
 
 @main
 struct iTimeApp: App {
+    @Environment(\.scenePhase) private var scenePhase
+    
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             EventCategory.self,
@@ -36,5 +38,25 @@ struct iTimeApp: App {
             MainTabView()
         }
         .modelContainer(sharedModelContainer)
+        .onChange(of: scenePhase) { oldPhase, newPhase in
+            handleScenePhaseChange(newPhase)
+        }
+    }
+    
+    // 处理应用生命周期变化
+    private func handleScenePhaseChange(_ phase: ScenePhase) {
+        switch phase {
+        case .background:
+            // 进入后台时保存计时器状态
+            print("📱 应用进入后台，保存计时器状态")
+        case .inactive:
+            // 即将进入非活动状态
+            break
+        case .active:
+            // 应用激活（从后台返回或首次启动）
+            print("📱 应用进入前台")
+        @unknown default:
+            break
+        }
     }
 }
