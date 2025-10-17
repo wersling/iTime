@@ -27,8 +27,8 @@ struct StatisticsView: View {
         return (try? modelContext.fetch(descriptor)) ?? []
     }
     
-    // 计算统计数据
-    private var statistics: [EventStatistics] {
+    // 计算事件统计（按事件统计，用于图表）
+    private var eventTypeStatistics: [EventTypeStatistics] {
         var statDict: [UUID: (eventType: EventType, duration: TimeInterval, count: Int)] = [:]
         
         for record in timeRecords {
@@ -43,7 +43,28 @@ struct StatisticsView: View {
             }
         }
         
-        var stats = statDict.map { EventStatistics(eventType: $0.value.eventType, totalDuration: $0.value.duration, recordCount: $0.value.count) }
+        let stats = statDict.map { EventTypeStatistics(eventType: $0.value.eventType, totalDuration: $0.value.duration, recordCount: $0.value.count) }
+        return stats.sorted { $0.totalDuration > $1.totalDuration }
+    }
+    
+    // 计算类别统计（按类别统计，用于列表）
+    private var statistics: [EventStatistics] {
+        var statDict: [UUID: (category: EventCategory, duration: TimeInterval, count: Int)] = [:]
+        
+        for record in timeRecords {
+            guard let eventType = record.eventType,
+                  let category = eventType.category else { continue }
+            
+            if var stat = statDict[category.id] {
+                stat.duration += record.duration
+                stat.count += 1
+                statDict[category.id] = stat
+            } else {
+                statDict[category.id] = (category, record.duration, 1)
+            }
+        }
+        
+        var stats = statDict.map { EventStatistics(category: $0.value.category, totalDuration: $0.value.duration, recordCount: $0.value.count) }
         
         // 计算百分比
         let totalDuration = stats.reduce(0) { $0 + $1.totalDuration }
@@ -117,9 +138,9 @@ struct StatisticsView: View {
                     )
                     .padding(.horizontal)
                     
-                    // 图表
-                    if !statistics.isEmpty {
-                        ChartView(statistics: statistics)
+                    // 图表（显示事件级别统计）
+                    if !eventTypeStatistics.isEmpty {
+                        EventTypeChartView(statistics: eventTypeStatistics)
                             .frame(height: 250)
                             .padding()
                     }
@@ -241,12 +262,12 @@ struct StatisticRow: View {
     var body: some View {
         VStack(spacing: 8) {
             HStack {
-                // 颜色和名称
-                Circle()
-                    .fill(statistic.eventType.displayColor)
-                    .frame(width: 12, height: 12)
+                // 图标和名称
+                Image(systemName: statistic.category.icon)
+                    .foregroundColor(statistic.category.color)
+                    .frame(width: 20)
                 
-                Text(statistic.eventType.name)
+                Text(statistic.category.name)
                     .font(.headline)
                 
                 Spacer()
@@ -264,7 +285,7 @@ struct StatisticRow: View {
                         .fill(Color.gray.opacity(0.2))
                     
                     Rectangle()
-                        .fill(statistic.eventType.displayColor)
+                        .fill(statistic.category.color)
                         .frame(width: geometry.size.width * statistic.percentage)
                 }
             }
@@ -287,7 +308,7 @@ struct StatisticRow: View {
         .padding()
         .background(
             RoundedRectangle(cornerRadius: Constants.UI.cornerRadius)
-                .fill(statistic.eventType.displayColor.opacity(0.05))
+                .fill(statistic.category.color.opacity(0.05))
         )
         .padding(.horizontal)
     }

@@ -8,6 +8,7 @@
 import Foundation
 import SwiftData
 import Combine
+import UIKit
 
 @MainActor
 class TimerService: ObservableObject {
@@ -21,7 +22,11 @@ class TimerService: ObservableObject {
     private var modelContext: ModelContext?
     private var notificationService = NotificationService.shared
     private var calendarService = CalendarService.shared
-    private var appIconManager = AppIconManager.shared
+    
+    // 触觉反馈生成器
+    private let lightImpact = UIImpactFeedbackGenerator(style: .light)
+    private let mediumImpact = UIImpactFeedbackGenerator(style: .medium)
+    private let heavyImpact = UIImpactFeedbackGenerator(style: .heavy)
     
     // UserDefaults keys for persistence
     private let activeRecordIdKey = "activeRecordId"
@@ -77,9 +82,6 @@ class TimerService: ObservableObject {
         // 重新安排通知
         scheduleNextNotification()
         
-        // 切换到记录中图标
-        appIconManager.setRecordingIcon()
-        
         print("✅ 恢复计时器: \(record.eventType?.name ?? "未知"), 已运行 \(Int(elapsedTime))秒")
     }
     
@@ -101,9 +103,12 @@ class TimerService: ObservableObject {
     
     // 开始计时
     func startTimer(for eventType: EventType) {
-        // 如果已有活动记录，先停止
+        // 触觉反馈：中等震动
+        mediumImpact.impactOccurred()
+        
+        // 如果已有活动记录，先停止（不触发震动）
         if currentRecord != nil {
-            stopTimer()
+            stopTimer(triggerHaptic: false)
         }
         
         // 确保先停止旧的Timer
@@ -126,15 +131,20 @@ class TimerService: ObservableObject {
         // 安排1小时后的第一次提醒
         scheduleNextNotification()
         
-        // 切换到记录中图标
-        appIconManager.setRecordingIcon()
-        
         print("▶️ 开始计时: \(eventType.name)")
     }
     
     // 停止计时
-    func stopTimer(minValidDuration: TimeInterval = Constants.Settings.defaultMinDuration, calendarSyncEnabled: Bool = false, selectedCalendarId: String? = nil) {
+    func stopTimer(minValidDuration: TimeInterval = Constants.Settings.defaultMinDuration, calendarSyncEnabled: Bool = false, selectedCalendarId: String? = nil, triggerHaptic: Bool = true) {
         guard let record = currentRecord else { return }
+        
+        // 触觉反馈：重震动（双震）
+        if triggerHaptic {
+            heavyImpact.impactOccurred()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+                self?.heavyImpact.impactOccurred()
+            }
+        }
         
         stopInternalTimer()
         
@@ -171,9 +181,6 @@ class TimerService: ObservableObject {
         Task {
             await notificationService.cancelHourlyReminder()
         }
-        
-        // 切换回默认图标
-        appIconManager.setDefaultIcon()
     }
     
     // 切换事件类型

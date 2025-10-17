@@ -26,6 +26,7 @@ struct MainTabView: View {
                     Label("设置", systemImage: "gear")
                 }
         }
+        .tint(.blue)  // 设置TabView选中状态为蓝色
     }
 }
 

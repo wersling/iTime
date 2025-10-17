@@ -74,12 +74,6 @@ struct TimerView: View {
                                             }
                                         )
                                     }
-                                    
-                                    // 添加按钮
-                                    AddEventTypeButton {
-                                        selectedCategory = category
-                                        showingAddEventType = true
-                                    }
                                 }
                                 .padding(.horizontal)
                             }
@@ -92,9 +86,11 @@ struct TimerView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button {
+                        selectedCategory = nil  // 清空预选分类
                         showingAddEventType = true
                     } label: {
                         Image(systemName: "plus.circle.fill")
+                            .font(.system(size: 22))
                     }
                 }
             }
@@ -175,36 +171,6 @@ struct TimerView: View {
             calendarSyncEnabled: calendarSyncEnabled,
             selectedCalendarId: selectedCalendarId.isEmpty ? nil : selectedCalendarId
         )
-    }
-}
-
-// 添加事件类型按钮
-struct AddEventTypeButton: View {
-    let action: () -> Void
-    
-    var body: some View {
-        Button(action: action) {
-            VStack(spacing: 8) {
-                Image(systemName: "plus")
-                    .font(.system(size: Constants.UI.iconSize))
-                    .foregroundColor(.secondary)
-                
-                Text("添加")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
-            .frame(maxWidth: .infinity, minHeight: 80)
-            .padding(8)
-            .background(
-                RoundedRectangle(cornerRadius: Constants.UI.cornerRadius)
-                    .fill(Color.gray.opacity(0.1))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: Constants.UI.cornerRadius)
-                    .stroke(Color.gray.opacity(0.3), lineWidth: 1)
-                    .strokeBorder(style: StrokeStyle(lineWidth: 1, dash: [5]))
-            )
-        }
     }
 }
 
