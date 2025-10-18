@@ -15,8 +15,7 @@ struct StatisticsView: View {
     @State private var selectedDate: Date = Date()
     @State private var showingRecordList = false
     @State private var showingEventTypeStatistics = false  // 显示事件统计
-    @State private var selectedCategory: EventCategory? = nil  // 选中的分类，用于过滤记录
-    @State private var selectedEventType: EventType? = nil  // 选中的事件类型，用于过滤记录
+    @State private var recordFilter: RecordFilter? = nil  // 记录过滤条件
     
     // 动态查询当前时间段的记录
     private var timeRecords: [TimeRecord] {
@@ -86,29 +85,6 @@ struct StatisticsView: View {
         timeRecords.reduce(0) { $0 + $1.duration }
     }
     
-    // 过滤后的记录（用于显示详情）
-    private var filteredRecords: [TimeRecord] {
-        if let eventType = selectedEventType {
-            return timeRecords.filter { record in
-                record.eventType?.id == eventType.id
-            }
-        } else if let category = selectedCategory {
-            return timeRecords.filter { record in
-                record.eventType?.category?.id == category.id
-            }
-        }
-        return timeRecords
-    }
-    
-    // 记录列表标题
-    private var recordListTitle: String {
-        if let eventType = selectedEventType {
-            return "\(eventType.name) - 详细记录"
-        } else if let category = selectedCategory {
-            return "\(category.name) - 详细记录"
-        }
-        return "详细记录"
-    }
     
     var body: some View {
         NavigationStack {
@@ -151,7 +127,7 @@ struct StatisticsView: View {
                     // 总计时长（可点击查看全部记录）
                     Button {
                         if !timeRecords.isEmpty {
-                            selectedCategory = nil
+                            recordFilter = nil
                             showingRecordList = true
                         }
                     } label: {
@@ -183,6 +159,35 @@ struct StatisticsView: View {
                     .disabled(timeRecords.isEmpty)
                     .padding(.horizontal)
                     
+                    // 统计列表
+                    if !statistics.isEmpty {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("分类统计")
+                                .font(.headline)
+                                .padding(.horizontal)
+                            
+                            ForEach(statistics) { stat in
+                                Button {
+                                    recordFilter = .category(stat.category)
+                                    showingRecordList = true
+                                } label: {
+                                    StatisticRow(statistic: stat)
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                    } else {
+                        VStack(spacing: 12) {
+                            Image(systemName: "chart.bar.xaxis")
+                                .font(.system(size: 48))
+                                .foregroundColor(.secondary)
+                            Text("暂无数据")
+                                .font(.headline)
+                                .foregroundColor(.secondary)
+                        }
+                        .padding(40)
+                    }
+                    
                     // 查看事件统计按钮
                     if !eventTypeStatistics.isEmpty {
                         Button {
@@ -206,68 +211,41 @@ struct StatisticsView: View {
                         }
                         .padding(.horizontal)
                     }
-                    
-                    // 统计列表
-                    if !statistics.isEmpty {
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("分类统计")
-                                .font(.headline)
-                                .padding(.horizontal)
-                            
-                            ForEach(statistics) { stat in
-                                Button {
-                                    selectedCategory = stat.category
-                                    showingRecordList = true
-                                } label: {
-                                    StatisticRow(statistic: stat)
-                                }
-                                .buttonStyle(.plain)
-                            }
-                        }
-                    } else {
-                        VStack(spacing: 12) {
-                            Image(systemName: "chart.bar.xaxis")
-                                .font(.system(size: 48))
-                                .foregroundColor(.secondary)
-                            Text("暂无数据")
-                                .font(.headline)
-                                .foregroundColor(.secondary)
-                        }
-                        .padding(40)
-                    }
-                    
-                    // 查看全部详细记录按钮
-                    if !timeRecords.isEmpty {
-                        Button {
-                            selectedCategory = nil  // 清空分类过滤，显示全部记录
-                            showingRecordList = true
-                        } label: {
-                            HStack {
-                                Text("查看全部详细记录")
-                                Image(systemName: "chevron.right")
-                            }
-                            .font(.headline)
-                            .foregroundColor(.blue)
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(
-                                RoundedRectangle(cornerRadius: Constants.UI.cornerRadius)
-                                    .fill(Color.blue.opacity(0.1))
-                            )
-                        }
-                        .padding(.horizontal)
-                    }
+
+                    // // 查看全部详细记录按钮
+                    // if !timeRecords.isEmpty {
+                    //     Button {
+                    //         recordFilter = nil
+                    //         showingRecordList = true
+                    //     } label: {
+                    //         HStack {
+                    //             Text("查看全部详细记录")
+                    //             Image(systemName: "chevron.right")
+                    //         }
+                    //         .font(.headline)
+                    //         .foregroundColor(.blue)
+                    //         .frame(maxWidth: .infinity)
+                    //         .padding()
+                    //         .background(
+                    //             RoundedRectangle(cornerRadius: Constants.UI.cornerRadius)
+                    //                 .fill(Color.blue.opacity(0.1))
+                    //         )
+                    //     }
+                    //     .padding(.horizontal)
+                    // }
                 }
                 .padding(.vertical)
             }
             .navigationTitle("统计")
             .sheet(isPresented: $showingRecordList) {
-                RecordListView(records: filteredRecords, title: recordListTitle)
+                FilteredRecordListView(
+                    allRecords: timeRecords,
+                    filter: $recordFilter
+                )
             }
             .sheet(isPresented: $showingEventTypeStatistics) {
                 EventTypeStatisticsView(eventTypeStatistics: eventTypeStatistics) { eventType in
-                    selectedEventType = eventType
-                    selectedCategory = nil  // 清空分类过滤
+                    recordFilter = .eventType(eventType)
                     showingRecordList = true
                 }
             }
@@ -393,6 +371,66 @@ struct StatisticRow: View {
                 .fill(statistic.category.color.opacity(0.05))
         )
         .padding(.horizontal)
+    }
+}
+
+// 记录过滤条件
+enum RecordFilter: Equatable {
+    case category(EventCategory)
+    case eventType(EventType)
+    
+    static func == (lhs: RecordFilter, rhs: RecordFilter) -> Bool {
+        switch (lhs, rhs) {
+        case (.category(let c1), .category(let c2)):
+            return c1.id == c2.id
+        case (.eventType(let e1), .eventType(let e2)):
+            return e1.id == e2.id
+        default:
+            return false
+        }
+    }
+}
+
+// 带过滤功能的记录列表视图
+struct FilteredRecordListView: View {
+    let allRecords: [TimeRecord]
+    @Binding var filter: RecordFilter?
+    @Environment(\.dismiss) private var dismiss
+    
+    // 过滤后的记录
+    private var filteredRecords: [TimeRecord] {
+        guard let filter = filter else {
+            return allRecords
+        }
+        
+        switch filter {
+        case .category(let category):
+            return allRecords.filter { record in
+                record.eventType?.category?.id == category.id
+            }
+        case .eventType(let eventType):
+            return allRecords.filter { record in
+                record.eventType?.id == eventType.id
+            }
+        }
+    }
+    
+    // 标题
+    private var title: String {
+        guard let filter = filter else {
+            return "详细记录"
+        }
+        
+        switch filter {
+        case .category(let category):
+            return "\(category.name) - 详细记录"
+        case .eventType(let eventType):
+            return "\(eventType.name) - 详细记录"
+        }
+    }
+    
+    var body: some View {
+        RecordListView(records: filteredRecords, title: title)
     }
 }
 
