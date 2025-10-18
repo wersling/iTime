@@ -10,6 +10,7 @@ import Foundation
 // 通知间隔枚举
 enum NotificationInterval: Int, CaseIterable, Identifiable {
     case never = 0
+    case minutes1 = 60       // 1分钟 (60秒)
     case minutes5 = 300      // 5分钟
     case minutes15 = 900     // 15分钟
     case minutes30 = 1800    // 30分钟
@@ -21,6 +22,7 @@ enum NotificationInterval: Int, CaseIterable, Identifiable {
     var displayName: String {
         switch self {
         case .never: return "从不"
+        case .minutes1: return "每 1 分钟"
         case .minutes5: return "每 5 分钟"
         case .minutes15: return "每 15 分钟"
         case .minutes30: return "每 30 分钟"
@@ -49,8 +51,7 @@ struct Constants {
     
     // Notification
     struct Notification {
-        static let hourlyReminderIdentifier = "hourlyReminder"
-        nonisolated(unsafe) static let reminderInterval: TimeInterval = 3600 // 1小时（默认，已废弃）
+        static let timerReminderIdentifier = "timerReminder" // 计时器提醒通知的标识符
     }
     
     // UI

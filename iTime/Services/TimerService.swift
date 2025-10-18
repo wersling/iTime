@@ -17,7 +17,6 @@ class TimerService: ObservableObject {
     
     @Published var currentRecord: TimeRecord?
     @Published var elapsedTime: TimeInterval = 0
-    @Published var lastNotificationTime: Date?
     
     private var timer: Timer?
     private var modelContext: ModelContext?
@@ -84,7 +83,7 @@ class TimerService: ObservableObject {
         stopInternalTimer()
         startInternalTimer()
         
-        // 重新安排通知
+        // 根据用户设置重新安排定时提醒
         scheduleNextNotification()
         
         print("✅ 恢复计时器: \(record.eventType?.name ?? "未知"), 已运行 \(Int(elapsedTime))秒")
@@ -133,7 +132,7 @@ class TimerService: ObservableObject {
         // 启动计时器
         startInternalTimer()
         
-        // 安排1小时后的第一次提醒
+        // 根据用户设置安排定时提醒
         scheduleNextNotification()
         
         // 启动 Live Activity
@@ -180,14 +179,13 @@ class TimerService: ObservableObject {
         // 清理状态
         currentRecord = nil
         elapsedTime = 0
-        lastNotificationTime = nil
         
         // 清理持久化状态
         clearPersistedState()
         
-        // 取消通知
+        // 取消定时提醒
         Task {
-            await notificationService.cancelHourlyReminder()
+            await notificationService.cancelReminder()
         }
         
         // 停止 Live Activity
@@ -217,9 +215,6 @@ class TimerService: ObservableObject {
                 if Int(self.elapsedTime) % 10 == 0 {
                     self.persistActiveState()
                 }
-                
-                // 检查是否需要发送通知（每小时一次）
-                self.checkHourlyNotification()
             }
         }
         
@@ -234,57 +229,7 @@ class TimerService: ObservableObject {
         timer = nil
     }
     
-    // 检查并发送通知
-    private func checkHourlyNotification() {
-        // 获取用户设置的通知间隔
-        let intervalRawValue = UserDefaults.standard.integer(forKey: Constants.Settings.notificationInterval)
-        let interval = NotificationInterval(rawValue: intervalRawValue) ?? .minutes60
-        
-        // 如果设置为「从不」，则不发送通知
-        guard let reminderInterval = interval.timeInterval else { return }
-        
-        // 检查是否到达提醒时间
-        if let lastNotification = lastNotificationTime {
-            let timeSinceLastNotification = Date().timeIntervalSince(lastNotification)
-            if timeSinceLastNotification >= reminderInterval {
-                sendNotification(interval: interval)
-            }
-        } else {
-            // 第一次检查：是否已经过了提醒间隔
-            if elapsedTime >= reminderInterval {
-                sendNotification(interval: interval)
-            }
-        }
-    }
-    
-    private func sendNotification(interval: NotificationInterval) {
-        guard let eventType = currentRecord?.eventType else { return }
-        
-        lastNotificationTime = Date()
-        
-        // 计算已用时间的友好显示
-        let minutes = Int(elapsedTime / 60)
-        let hours = minutes / 60
-        let remainingMinutes = minutes % 60
-        
-        var timeString = ""
-        if hours > 0 {
-            timeString = "\(hours)小时"
-            if remainingMinutes > 0 {
-                timeString += "\(remainingMinutes)分钟"
-            }
-        } else {
-            timeString = "\(minutes)分钟"
-        }
-        
-        Task {
-            await notificationService.sendImmediateNotification(
-                title: "时间提醒",
-                body: "「\(eventType.name)」已经进行了\(timeString)"
-            )
-        }
-    }
-    
+    // 根据用户设置安排下一次定时提醒
     private func scheduleNextNotification() {
         guard let eventType = currentRecord?.eventType else { return }
         
@@ -297,7 +242,7 @@ class TimerService: ObservableObject {
         
         let nextNotificationDate = Date().addingTimeInterval(reminderInterval)
         Task {
-            await notificationService.scheduleHourlyReminder(for: eventType.name, at: nextNotificationDate)
+            await notificationService.scheduleReminder(for: eventType.name, at: nextNotificationDate, interval: reminderInterval)
         }
     }
     

@@ -39,14 +39,14 @@ class NotificationService: ObservableObject {
         }
     }
     
-    // 安排1小时提醒
-    func scheduleHourlyReminder(for eventName: String, at fireDate: Date) async {
+    // 安排定时提醒
+    func scheduleReminder(for eventName: String, at fireDate: Date, interval: TimeInterval) async {
         // 取消之前的提醒
-        await cancelHourlyReminder()
+        await cancelReminder()
         
         let content = UNMutableNotificationContent()
         content.title = "时间提醒"
-        content.body = "「\(eventName)」已经进行了1小时"
+        content.body = "「\(eventName)」已经进行了\(formatDuration(interval))"
         content.sound = .default
         
         let timeInterval = fireDate.timeIntervalSinceNow
@@ -54,7 +54,7 @@ class NotificationService: ObservableObject {
         
         let trigger = UNTimeIntervalNotificationTrigger(timeInterval: timeInterval, repeats: false)
         let request = UNNotificationRequest(
-            identifier: Constants.Notification.hourlyReminderIdentifier,
+            identifier: Constants.Notification.timerReminderIdentifier,
             content: content,
             trigger: trigger
         )
@@ -66,31 +66,27 @@ class NotificationService: ObservableObject {
         }
     }
     
-    // 取消1小时提醒
-    func cancelHourlyReminder() async {
-        UNUserNotificationCenter.current().removePendingNotificationRequests(
-            withIdentifiers: [Constants.Notification.hourlyReminderIdentifier]
-        )
+    // 格式化时间间隔显示 - 简单直接
+    private func formatDuration(_ interval: TimeInterval) -> String {
+        let minutes = Int(interval) / 60
+        if minutes < 60 {
+            return "\(minutes) 分钟"
+        } else {
+            let hours = minutes / 60
+            let remainingMinutes = minutes % 60
+            if remainingMinutes == 0 {
+                return "\(hours) 小时"
+            } else {
+                return "\(hours) 小时 \(remainingMinutes) 分钟"
+            }
+        }
     }
     
-    // 立即发送通知（用于测试或立即提醒）
-    func sendImmediateNotification(title: String, body: String) async {
-        let content = UNMutableNotificationContent()
-        content.title = title
-        content.body = body
-        content.sound = .default
-        
-        let request = UNNotificationRequest(
-            identifier: UUID().uuidString,
-            content: content,
-            trigger: nil
+    // 取消定时提醒
+    func cancelReminder() async {
+        UNUserNotificationCenter.current().removePendingNotificationRequests(
+            withIdentifiers: [Constants.Notification.timerReminderIdentifier]
         )
-        
-        do {
-            try await UNUserNotificationCenter.current().add(request)
-        } catch {
-            print("发送通知失败: \(error)")
-        }
     }
 }
 
