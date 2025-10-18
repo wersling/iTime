@@ -67,6 +67,8 @@ struct LockScreenLiveActivityView: View {
                 Text(timerInterval: context.state.startTime...Date.distantFuture, countsDown: false)
                     .font(.system(size: 28, weight: .bold, design: .rounded))
                     .monospacedDigit()
+                    .frame(alignment: .trailing)
+                    .multilineTextAlignment(.trailing)
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
