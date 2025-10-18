@@ -14,7 +14,9 @@ struct StatisticsView: View {
     @State private var selectedPeriod: StatisticsPeriod = .day
     @State private var selectedDate: Date = Date()
     @State private var showingRecordList = false
+    @State private var showingEventTypeStatistics = false  // 显示事件统计
     @State private var selectedCategory: EventCategory? = nil  // 选中的分类，用于过滤记录
+    @State private var selectedEventType: EventType? = nil  // 选中的事件类型，用于过滤记录
     
     // 动态查询当前时间段的记录
     private var timeRecords: [TimeRecord] {
@@ -86,7 +88,11 @@ struct StatisticsView: View {
     
     // 过滤后的记录（用于显示详情）
     private var filteredRecords: [TimeRecord] {
-        if let category = selectedCategory {
+        if let eventType = selectedEventType {
+            return timeRecords.filter { record in
+                record.eventType?.id == eventType.id
+            }
+        } else if let category = selectedCategory {
             return timeRecords.filter { record in
                 record.eventType?.category?.id == category.id
             }
@@ -96,7 +102,9 @@ struct StatisticsView: View {
     
     // 记录列表标题
     private var recordListTitle: String {
-        if let category = selectedCategory {
+        if let eventType = selectedEventType {
+            return "\(eventType.name) - 详细记录"
+        } else if let category = selectedCategory {
             return "\(category.name) - 详细记录"
         }
         return "详细记录"
@@ -140,29 +148,64 @@ struct StatisticsView: View {
                     }
                     .padding(.horizontal)
                     
-                    // 总计时长
-                    VStack(spacing: 8) {
-                        Text("总计")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                        
-                        Text(totalDuration.formattedDuration)
-                            .font(.system(size: 36, weight: .bold))
+                    // 总计时长（可点击查看全部记录）
+                    Button {
+                        if !timeRecords.isEmpty {
+                            selectedCategory = nil
+                            showingRecordList = true
+                        }
+                    } label: {
+                        VStack(spacing: 8) {
+                            HStack(spacing: 4) {
+                                Text("总计")
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                                
+                                if !timeRecords.isEmpty {
+                                    Image(systemName: "chevron.right")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                            }
+                            
+                            Text(totalDuration.formattedDuration)
+                                .font(.system(size: 36, weight: .bold))
+                                .foregroundColor(.primary)
+                        }
+                        .padding()
+                        .frame(maxWidth: .infinity)
+                        .background(
+                            RoundedRectangle(cornerRadius: Constants.UI.cornerRadius)
+                                .fill(Color.blue.opacity(0.1))
+                        )
                     }
-                    .padding()
-                    .frame(maxWidth: .infinity)
-                    .background(
-                        RoundedRectangle(cornerRadius: Constants.UI.cornerRadius)
-                            .fill(Color.blue.opacity(0.1))
-                    )
+                    .buttonStyle(.plain)
+                    .disabled(timeRecords.isEmpty)
                     .padding(.horizontal)
                     
-                    // 图表（显示事件级别统计）
-                    // if !eventTypeStatistics.isEmpty {
-                    //     EventTypeChartView(statistics: eventTypeStatistics)
-                    //         .frame(height: 250)
-                    //         .padding()
-                    // }
+                    // 查看事件统计按钮
+                    if !eventTypeStatistics.isEmpty {
+                        Button {
+                            showingEventTypeStatistics = true
+                        } label: {
+                            HStack {
+                                Image(systemName: "chart.bar.xaxis")
+                                    .foregroundColor(.blue)
+                                Text("查看事件统计")
+                                    .font(.headline)
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .font(.caption)
+                            }
+                            .foregroundColor(.blue)
+                            .padding()
+                            .background(
+                                RoundedRectangle(cornerRadius: Constants.UI.cornerRadius)
+                                    .fill(Color.blue.opacity(0.1))
+                            )
+                        }
+                        .padding(.horizontal)
+                    }
                     
                     // 统计列表
                     if !statistics.isEmpty {
@@ -220,6 +263,13 @@ struct StatisticsView: View {
             .navigationTitle("统计")
             .sheet(isPresented: $showingRecordList) {
                 RecordListView(records: filteredRecords, title: recordListTitle)
+            }
+            .sheet(isPresented: $showingEventTypeStatistics) {
+                EventTypeStatisticsView(eventTypeStatistics: eventTypeStatistics) { eventType in
+                    selectedEventType = eventType
+                    selectedCategory = nil  // 清空分类过滤
+                    showingRecordList = true
+                }
             }
         }
     }
