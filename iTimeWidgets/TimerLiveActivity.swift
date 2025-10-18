@@ -17,61 +17,17 @@ struct TimerLiveActivity: Widget {
             LockScreenLiveActivityView(context: context)
             
         } dynamicIsland: { context in
+            // 不显示在灵动岛，返回空的 DynamicIsland
             DynamicIsland {
-                // 展开状态
                 DynamicIslandExpandedRegion(.leading) {
-                    HStack(spacing: 8) {
-                        Image(systemName: context.state.categoryIcon)
-                            .foregroundColor(Color(hex: context.state.categoryColor))
-                            .font(.title2)
-                        
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(context.state.eventName)
-                                .font(.headline)
-                            Text(context.state.categoryName)
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                }
-                
-                DynamicIslandExpandedRegion(.trailing) {
-                    VStack(alignment: .trailing, spacing: 4) {
-                        Text(timerInterval: context.state.startTime...Date.distantFuture, countsDown: false)
-                            .font(.title2)
-                            .fontWeight(.semibold)
-                            .monospacedDigit()
-                        
-                        Text("计时中")
-                            .font(.caption2)
-                            .foregroundColor(.secondary)
-                    }
-                }
-                
-                DynamicIslandExpandedRegion(.bottom) {
-                    HStack {
-                        Image(systemName: "clock.fill")
-                            .font(.caption)
-                        Text("开始于 \(context.state.startTime, style: .time)")
-                            .font(.caption)
-                    }
-                    .foregroundColor(.secondary)
-                    .padding(.top, 8)
+                    EmptyView()
                 }
             } compactLeading: {
-                // 紧凑状态左侧
-                Image(systemName: context.state.categoryIcon)
-                    .foregroundColor(Color(hex: context.state.categoryColor))
+                EmptyView()
             } compactTrailing: {
-                // 紧凑状态右侧（显示时间）
-                Text(timerInterval: context.state.startTime...Date.distantFuture, countsDown: false)
-                    .monospacedDigit()
-                    .font(.caption2)
-                    .fontWeight(.semibold)
+                EmptyView()
             } minimal: {
-                // 最小状态
-                Image(systemName: "timer")
-                    .foregroundColor(Color(hex: context.state.categoryColor))
+                EmptyView()
             }
         }
     }
