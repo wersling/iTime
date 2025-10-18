@@ -14,6 +14,7 @@ struct StatisticsView: View {
     @State private var selectedPeriod: StatisticsPeriod = .day
     @State private var selectedDate: Date = Date()
     @State private var showingRecordList = false
+    @State private var selectedCategory: EventCategory? = nil  // 选中的分类，用于过滤记录
     
     // 动态查询当前时间段的记录
     private var timeRecords: [TimeRecord] {
@@ -81,6 +82,24 @@ struct StatisticsView: View {
     
     private var totalDuration: TimeInterval {
         timeRecords.reduce(0) { $0 + $1.duration }
+    }
+    
+    // 过滤后的记录（用于显示详情）
+    private var filteredRecords: [TimeRecord] {
+        if let category = selectedCategory {
+            return timeRecords.filter { record in
+                record.eventType?.category?.id == category.id
+            }
+        }
+        return timeRecords
+    }
+    
+    // 记录列表标题
+    private var recordListTitle: String {
+        if let category = selectedCategory {
+            return "\(category.name) - 详细记录"
+        }
+        return "详细记录"
     }
     
     var body: some View {
@@ -153,7 +172,13 @@ struct StatisticsView: View {
                                 .padding(.horizontal)
                             
                             ForEach(statistics) { stat in
-                                StatisticRow(statistic: stat)
+                                Button {
+                                    selectedCategory = stat.category
+                                    showingRecordList = true
+                                } label: {
+                                    StatisticRow(statistic: stat)
+                                }
+                                .buttonStyle(.plain)
                             }
                         }
                     } else {
@@ -168,13 +193,14 @@ struct StatisticsView: View {
                         .padding(40)
                     }
                     
-                    // 查看详细记录按钮
+                    // 查看全部详细记录按钮
                     if !timeRecords.isEmpty {
                         Button {
+                            selectedCategory = nil  // 清空分类过滤，显示全部记录
                             showingRecordList = true
                         } label: {
                             HStack {
-                                Text("查看详细记录")
+                                Text("查看全部详细记录")
                                 Image(systemName: "chevron.right")
                             }
                             .font(.headline)
@@ -193,7 +219,7 @@ struct StatisticsView: View {
             }
             .navigationTitle("统计")
             .sheet(isPresented: $showingRecordList) {
-                RecordListView(records: timeRecords)
+                RecordListView(records: filteredRecords, title: recordListTitle)
             }
         }
     }
@@ -269,12 +295,18 @@ struct StatisticRow: View {
                 
                 Text(statistic.category.name)
                     .font(.headline)
+                    .foregroundColor(.primary)
                 
                 Spacer()
                 
                 // 时长
                 Text(statistic.totalDuration.formattedDuration)
                     .font(.subheadline)
+                    .foregroundColor(.secondary)
+                
+                // 箭头提示可以点击
+                Image(systemName: "chevron.right")
+                    .font(.caption)
                     .foregroundColor(.secondary)
             }
             

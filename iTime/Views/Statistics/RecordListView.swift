@@ -10,6 +10,7 @@ import SwiftData
 
 struct RecordListView: View {
     let records: [TimeRecord]
+    var title: String = "详细记录"  // 自定义标题，默认为"详细记录"
     @Environment(\.dismiss) private var dismiss
     
     // 按日期分组的记录
@@ -56,7 +57,7 @@ struct RecordListView: View {
                     }
                 }
             }
-            .navigationTitle("详细记录")
+            .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
