@@ -51,10 +51,22 @@ struct SettingsView: View {
                             viewModel.openAppSettings()
                         }
                     }
+                    
+                    if viewModel.notificationStatus == .authorized {
+                        Picker("提醒间隔", selection: $viewModel.notificationInterval) {
+                            ForEach(NotificationInterval.allCases) { interval in
+                                Text(interval.displayName).tag(interval)
+                            }
+                        }
+                    }
                 } header: {
                     Text("通知设置")
                 } footer: {
-                    Text("开启通知后，单次事件超过1小时会收到提醒")
+                    if viewModel.notificationInterval == .never {
+                        Text("已关闭计时提醒")
+                    } else {
+                        Text("计时开始后，将\(viewModel.notificationInterval.displayName)收到一次提醒")
+                    }
                 }
                 
                 // 日历同步

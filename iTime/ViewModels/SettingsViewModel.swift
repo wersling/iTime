@@ -16,9 +16,15 @@ class SettingsViewModel: ObservableObject {
     @AppStorage(Constants.Settings.minValidDuration) var minValidDuration: Double = Constants.Settings.defaultMinDuration
     @AppStorage(Constants.Settings.selectedCalendarId) var selectedCalendarId: String = ""
     @AppStorage(Constants.Settings.calendarSyncEnabled) var calendarSyncEnabled: Bool = false
+    @AppStorage(Constants.Settings.notificationInterval) private var notificationIntervalRawValue: Int = NotificationInterval.minutes60.rawValue
     
     @Published var notificationStatus: UNAuthorizationStatus = .notDetermined
     @Published var calendarStatus: EKAuthorizationStatus = .notDetermined
+    
+    var notificationInterval: NotificationInterval {
+        get { NotificationInterval(rawValue: notificationIntervalRawValue) ?? .minutes60 }
+        set { notificationIntervalRawValue = newValue.rawValue }
+    }
     
     private let notificationService = NotificationService.shared
     private let calendarService = CalendarService.shared
