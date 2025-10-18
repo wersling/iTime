@@ -9,6 +9,7 @@ import Foundation
 import SwiftData
 import Combine
 import UIKit
+import ActivityKit
 
 @MainActor
 class TimerService: ObservableObject {
@@ -22,6 +23,10 @@ class TimerService: ObservableObject {
     private var modelContext: ModelContext?
     private var notificationService = NotificationService.shared
     private var calendarService = CalendarService.shared
+    
+    // Live Activity
+    @available(iOS 16.1, *)
+    private var currentActivity: Activity<TimerActivityAttributes>?
     
     // 触觉反馈生成器
     private let lightImpact = UIImpactFeedbackGenerator(style: .light)
@@ -131,6 +136,9 @@ class TimerService: ObservableObject {
         // 安排1小时后的第一次提醒
         scheduleNextNotification()
         
+        // 启动 Live Activity
+        startLiveActivity(for: eventType, startTime: record.startTime)
+        
         print("▶️ 开始计时: \(eventType.name)")
     }
     
@@ -181,6 +189,9 @@ class TimerService: ObservableObject {
         Task {
             await notificationService.cancelHourlyReminder()
         }
+        
+        // 停止 Live Activity
+        stopLiveActivity()
     }
     
     // 切换事件类型
@@ -271,6 +282,70 @@ class TimerService: ObservableObject {
         let seconds = Int(elapsedTime) % 60
         
         return String(format: "%02d:%02d:%02d", hours, minutes, seconds)
+    }
+    
+    // MARK: - Live Activity 管理
+    
+    @available(iOS 16.1, *)
+    private func startLiveActivity(for eventType: EventType, startTime: Date) {
+        print("🚀 启动 Live Activity...")
+        
+        // 检查系统支持
+        let authInfo = ActivityAuthorizationInfo()
+        print("📊 Live Activity 授权状态: \(authInfo.areActivitiesEnabled)")
+        
+        guard authInfo.areActivitiesEnabled else {
+            print("⚠️ Live Activity 未授权")
+            return
+        }
+        
+        // 先停止已有的 Activity
+        stopLiveActivity()
+        
+        // 获取分类信息
+        let categoryName = eventType.category?.name ?? "未分类"
+        let categoryIcon = eventType.category?.icon ?? "circle.fill"
+        let categoryColor = eventType.category?.colorHex ?? "#3B82F6"
+        
+        print("📝 事件信息: \(eventType.name) (\(categoryName))")
+        
+        // 创建 Activity 属性
+        let attributes = TimerActivityAttributes(eventTypeID: eventType.id.uuidString)
+        let contentState = TimerActivityAttributes.ContentState(
+            startTime: startTime,
+            eventName: eventType.name,
+            categoryName: categoryName,
+            categoryIcon: categoryIcon,
+            categoryColor: categoryColor
+        )
+        
+        do {
+            // 启动 Live Activity
+            let activity = try Activity<TimerActivityAttributes>.request(
+                attributes: attributes,
+                content: .init(state: contentState, staleDate: nil),
+                pushType: nil
+            )
+            
+            currentActivity = activity
+            print("✅ Live Activity 已启动成功!")
+            print("   - Activity ID: \(activity.id)")
+            print("   - 事件: \(eventType.name)")
+        } catch {
+            print("❌ 启动 Live Activity 失败: \(error.localizedDescription)")
+        }
+    }
+    
+    private func stopLiveActivity() {
+        if #available(iOS 16.1, *) {
+            guard let activity = currentActivity else { return }
+            
+            Task {
+                await activity.end(dismissalPolicy: .immediate)
+                currentActivity = nil
+                print("🛑 Live Activity 已停止")
+            }
+        }
     }
 }
 
