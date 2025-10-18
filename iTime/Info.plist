@@ -6,6 +6,8 @@
 	<array>
 		<string>remote-notification</string>
 	</array>
+	<key>NSSupportsLiveActivities</key>
+	<true/>
 	<key>NSCalendarsUsageDescription</key>
 	<string>iTime需要访问日历以同步您的时间记录</string>
 	<key>NSCalendarsFullAccessUsageDescription</key>
