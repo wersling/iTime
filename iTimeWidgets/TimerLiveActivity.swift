@@ -64,15 +64,9 @@ struct LockScreenLiveActivityView: View {
                 Spacer()
                 
                 // 右侧：计时器
-                VStack(alignment: .trailing, spacing: 2) {
-                    Text(timerInterval: context.state.startTime...Date.distantFuture, countsDown: false)
-                        .font(.system(size: 20, weight: .bold, design: .rounded))
-                        .monospacedDigit()
-                    
-                    Text("计时中")
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
-                }
+                Text(timerInterval: context.state.startTime...Date.distantFuture, countsDown: false)
+                    .font(.system(size: 28, weight: .bold, design: .rounded))
+                    .monospacedDigit()
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
