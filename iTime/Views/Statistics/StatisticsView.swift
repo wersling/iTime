@@ -139,11 +139,11 @@ struct StatisticsView: View {
                     .padding(.horizontal)
                     
                     // 图表（显示事件级别统计）
-                    if !eventTypeStatistics.isEmpty {
-                        EventTypeChartView(statistics: eventTypeStatistics)
-                            .frame(height: 250)
-                            .padding()
-                    }
+                    // if !eventTypeStatistics.isEmpty {
+                    //     EventTypeChartView(statistics: eventTypeStatistics)
+                    //         .frame(height: 250)
+                    //         .padding()
+                    // }
                     
                     // 统计列表
                     if !statistics.isEmpty {
