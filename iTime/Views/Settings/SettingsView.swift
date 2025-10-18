@@ -111,6 +111,16 @@ struct SettingsView: View {
                 
                 // 数据管理
                 Section {
+                    NavigationLink {
+                        CloudKitDebugView()
+                    } label: {
+                        HStack {
+                            Image(systemName: "cloud.fill")
+                                .foregroundColor(.blue)
+                            Text("CloudKit 同步状态")
+                        }
+                    }
+                    
                     VStack(alignment: .leading, spacing: 8) {
                         HStack {
                             Image(systemName: "icloud.fill")
