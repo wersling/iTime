@@ -11,11 +11,11 @@ import SwiftUI
 
 @Model
 final class EventCategory {
-    @Attribute(.unique) var id: UUID
-    var name: String
-    var colorHex: String  // 存储颜色的十六进制值
-    var icon: String  // SF Symbol 名称
-    var sortOrder: Int  // 排序顺序
+    var id: UUID = UUID()  // CloudKit 不支持 unique 约束，改为有默认值
+    var name: String = ""  // 添加默认值
+    var colorHex: String = "#3B82F6"  // 存储颜色的十六进制值，添加默认值
+    var icon: String = "circle.fill"  // SF Symbol 名称，添加默认值
+    var sortOrder: Int = 0  // 排序顺序，添加默认值
     
     @Relationship(deleteRule: .cascade, inverse: \EventType.category)
     var eventTypes: [EventType]?

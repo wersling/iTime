@@ -11,10 +11,10 @@ import SwiftUI
 
 @Model
 final class EventType {
-    @Attribute(.unique) var id: UUID
-    var name: String
+    var id: UUID = UUID()  // CloudKit 不支持 unique 约束，改为有默认值
+    var name: String = ""  // 添加默认值
     var customColorHex: String?  // 可选的自定义颜色
-    var createdAt: Date
+    var createdAt: Date = Date()  // 添加默认值
     
     var category: EventCategory?
     

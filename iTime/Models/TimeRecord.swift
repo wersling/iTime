@@ -10,12 +10,12 @@ import SwiftData
 
 @Model
 final class TimeRecord {
-    @Attribute(.unique) var id: UUID
-    var startTime: Date
+    var id: UUID = UUID()  // CloudKit 不支持 unique 约束，改为有默认值
+    var startTime: Date = Date()  // 添加默认值
     var endTime: Date?
-    var duration: TimeInterval  // 秒
+    var duration: TimeInterval = 0  // 秒，添加默认值
     var calendarEventId: String?  // 日历事件ID
-    var isValid: Bool  // 是否有效记录（超过最小时长）
+    var isValid: Bool = false  // 是否有效记录（超过最小时长），添加默认值
     
     var eventType: EventType?
     
