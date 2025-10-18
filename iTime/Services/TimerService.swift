@@ -229,9 +229,10 @@ class TimerService: ObservableObject {
         timer = nil
     }
     
-    // 根据用户设置安排下一次定时提醒
+    // 根据用户设置批量安排定时提醒
     private func scheduleNextNotification() {
-        guard let eventType = currentRecord?.eventType else { return }
+        guard let record = currentRecord,
+              let eventType = record.eventType else { return }
         
         // 获取用户设置的通知间隔
         let intervalRawValue = UserDefaults.standard.integer(forKey: Constants.Settings.notificationInterval)
@@ -240,9 +241,13 @@ class TimerService: ObservableObject {
         // 如果设置为「从不」，则不安排通知
         guard let reminderInterval = interval.timeInterval else { return }
         
-        let nextNotificationDate = Date().addingTimeInterval(reminderInterval)
         Task {
-            await notificationService.scheduleReminder(for: eventType.name, at: nextNotificationDate, interval: reminderInterval)
+            // 一次性安排 5 小时内的所有通知
+            await notificationService.scheduleReminders(
+                for: eventType.name,
+                startTime: record.startTime,
+                interval: reminderInterval
+            )
         }
     }
     
