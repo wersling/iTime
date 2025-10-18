@@ -27,26 +27,16 @@ class TimerViewModel: ObservableObject {
     }
     
     func loadData() {
+        // 初始化预设分类（仅首次安装）
+        CategoryInitializer.initializeIfNeeded(modelContext: modelContext)
+        
         // 加载分类
         let categoryDescriptor = FetchDescriptor<EventCategory>(sortBy: [SortDescriptor(\.sortOrder)])
         categories = (try? modelContext.fetch(categoryDescriptor)) ?? []
         
-        // 如果没有分类，初始化预设分类
-        if categories.isEmpty {
-            initializePresetCategories()
-        }
-        
         // 加载事件类型
         let eventTypeDescriptor = FetchDescriptor<EventType>(sortBy: [SortDescriptor(\.createdAt)])
         eventTypes = (try? modelContext.fetch(eventTypeDescriptor)) ?? []
-    }
-    
-    private func initializePresetCategories() {
-        for preset in EventCategory.presetCategories {
-            modelContext.insert(preset)
-        }
-        try? modelContext.save()
-        loadData()
     }
     
     func addEventType(name: String, category: EventCategory, customColor: String? = nil) {

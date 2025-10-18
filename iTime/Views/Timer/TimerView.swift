@@ -110,23 +110,15 @@ struct TimerView: View {
             .onAppear {
                 // 配置timer service
                 timerService.configure(modelContext: modelContext)
-                // 初始化预设分类
-                initializeCategories()
+                // 初始化预设分类（仅首次安装）
+                CategoryInitializer.initializeIfNeeded(modelContext: modelContext)
+                // 检查并清理重复分类（修复旧版本遗留问题）
+                CategoryInitializer.checkAndMergeDuplicates(modelContext: modelContext)
             }
         }
     }
     
     // MARK: - Helper Methods
-    
-    private func initializeCategories() {
-        // 如果没有分类，初始化预设分类
-        if categories.isEmpty {
-            for preset in EventCategory.presetCategories {
-                modelContext.insert(preset)
-            }
-            try? modelContext.save()
-        }
-    }
     
     private func addEventType(name: String, category: EventCategory, customColor: String?) {
         let eventType = EventType(name: name, customColorHex: customColor, category: category)

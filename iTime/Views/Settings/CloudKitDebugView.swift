@@ -73,6 +73,18 @@ struct CloudKitDebugView: View {
                 }
             }
             
+            Section("数据维护") {
+                Button("检查并清理重复分类") {
+                    CategoryInitializer.checkAndMergeDuplicates(modelContext: modelContext)
+                }
+                .foregroundColor(.orange)
+                
+                Button("重置初始化标记") {
+                    CategoryInitializer.resetInitializationFlag()
+                }
+                .foregroundColor(.orange)
+            }
+            
             Section("测试数据") {
                 Button("创建测试分类") {
                     createTestCategory()
