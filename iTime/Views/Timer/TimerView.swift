@@ -14,7 +14,7 @@ struct TimerView: View {
     
     // 使用 @Query 直接查询数据，确保实时更新
     @Query(sort: \EventCategory.sortOrder) private var categories: [EventCategory]
-    @Query(sort: \EventType.createdAt) private var eventTypes: [EventType]
+    @Query(filter: #Predicate<EventType> { !$0.isArchived }, sort: \EventType.createdAt) private var eventTypes: [EventType]  // 只显示未归档事件
     
     @AppStorage(Constants.Settings.minValidDuration) private var minValidDuration: Double = Constants.Settings.defaultMinDuration
     @AppStorage(Constants.Settings.calendarSyncEnabled) private var calendarSyncEnabled: Bool = false
@@ -71,6 +71,9 @@ struct TimerView: View {
                                             },
                                             onDelete: {
                                                 deleteEventType(eventType)
+                                            },
+                                            onArchive: {
+                                                archiveEventType(eventType)
                                             }
                                         )
                                     }
@@ -128,6 +131,11 @@ struct TimerView: View {
     
     private func deleteEventType(_ eventType: EventType) {
         modelContext.delete(eventType)
+        try? modelContext.save()
+    }
+    
+    private func archiveEventType(_ eventType: EventType) {
+        eventType.isArchived = true
         try? modelContext.save()
     }
     

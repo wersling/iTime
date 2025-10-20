@@ -12,6 +12,7 @@ struct EventTypeCell: View {
     let isActive: Bool
     let onTap: () -> Void
     let onDelete: (() -> Void)?
+    let onArchive: (() -> Void)?  // 归档回调
     
     @State private var showingDeleteAlert = false
     
@@ -70,6 +71,14 @@ struct EventTypeCell: View {
             .shadow(color: isActive ? eventType.displayColor.opacity(0.3) : .clear, radius: 8, x: 0, y: 4)
         }
         .contextMenu {
+            if let onArchive = onArchive {
+                Button {
+                    onArchive()
+                } label: {
+                    Label("归档", systemImage: "archivebox")
+                }
+            }
+            
             if let onDelete = onDelete {
                 Button(role: .destructive) {
                     showingDeleteAlert = true
@@ -94,8 +103,8 @@ struct EventTypeCell: View {
     let eventType = EventType(name: "编程", category: category)
     
     return HStack {
-        EventTypeCell(eventType: eventType, isActive: false, onTap: {}, onDelete: {})
-        EventTypeCell(eventType: eventType, isActive: true, onTap: {}, onDelete: nil)
+        EventTypeCell(eventType: eventType, isActive: false, onTap: {}, onDelete: {}, onArchive: {})
+        EventTypeCell(eventType: eventType, isActive: true, onTap: {}, onDelete: nil, onArchive: nil)
     }
     .padding()
 }

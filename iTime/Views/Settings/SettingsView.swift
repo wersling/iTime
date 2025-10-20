@@ -7,10 +7,13 @@
 
 import SwiftUI
 import EventKit
+import SwiftData
 
 struct SettingsView: View {
+    @Environment(\.modelContext) private var modelContext
     @StateObject private var viewModel = SettingsViewModel()
     @State private var showingCalendarPicker = false
+    @State private var showingArchivedEvents = false
     
     var body: some View {
         NavigationStack {
@@ -121,6 +124,28 @@ struct SettingsView: View {
                     Text("完成的有效记录会自动同步到选中的日历")
                 }
                 
+                // 事件管理
+                Section {
+                    Button {
+                        showingArchivedEvents = true
+                    } label: {
+                        HStack {
+                            Image(systemName: "archivebox")
+                                .foregroundColor(.orange)
+                            Text("归档事件")
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                    .foregroundColor(.primary)
+                } header: {
+                    Text("事件管理")
+                } footer: {
+                    Text("查看和恢复已归档的事件类型")
+                }
+                
                 // 数据管理
                 Section {
                     NavigationLink {
@@ -200,6 +225,9 @@ struct SettingsView: View {
                     calendars: viewModel.availableCalendars,
                     selectedCalendarId: $viewModel.selectedCalendarId
                 )
+            }
+            .sheet(isPresented: $showingArchivedEvents) {
+                ArchivedEventsView(modelContext: modelContext)
             }
         }
     }

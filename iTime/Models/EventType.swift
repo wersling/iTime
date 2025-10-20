@@ -15,6 +15,7 @@ final class EventType {
     var name: String = ""  // 添加默认值
     var customColorHex: String?  // 可选的自定义颜色
     var createdAt: Date = Date()  // 添加默认值
+    var isArchived: Bool = false  // 是否归档
     
     var category: EventCategory?
     
