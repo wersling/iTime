@@ -106,13 +106,13 @@ class TimerService: ObservableObject {
     }
     
     // 开始计时
-    func startTimer(for eventType: EventType) {
+    func startTimer(for eventType: EventType) async {
         // 触觉反馈：中等震动
         mediumImpact.impactOccurred()
         
         // 如果已有活动记录，先停止（不触发震动）
         if currentRecord != nil {
-            stopTimer(triggerHaptic: false)
+            await stopTimer(triggerHaptic: false)
         }
         
         // 确保先停止旧的Timer
@@ -136,13 +136,13 @@ class TimerService: ObservableObject {
         scheduleNextNotification()
         
         // 启动 Live Activity
-        startLiveActivity(for: eventType, startTime: record.startTime)
+        await startLiveActivity(for: eventType, startTime: record.startTime)
         
         print("▶️ 开始计时: \(eventType.name)")
     }
     
     // 停止计时
-    func stopTimer(minValidDuration: TimeInterval = Constants.Settings.defaultMinDuration, calendarSyncEnabled: Bool = false, selectedCalendarId: String? = nil, triggerHaptic: Bool = true) {
+    func stopTimer(minValidDuration: TimeInterval = Constants.Settings.defaultMinDuration, calendarSyncEnabled: Bool = false, selectedCalendarId: String? = nil, triggerHaptic: Bool = true) async {
         guard let record = currentRecord else { return }
         
         // 触觉反馈：重震动（双震）
@@ -184,18 +184,16 @@ class TimerService: ObservableObject {
         clearPersistedState()
         
         // 取消定时提醒
-        Task {
-            await notificationService.cancelReminder()
-        }
+        await notificationService.cancelReminder()
         
-        // 停止 Live Activity
-        stopLiveActivity()
+        // 停止 Live Activity（等待完成）
+        await stopLiveActivity()
     }
     
     // 切换事件类型
-    func switchEventType(to eventType: EventType, minValidDuration: TimeInterval = Constants.Settings.defaultMinDuration, calendarSyncEnabled: Bool = false, selectedCalendarId: String? = nil) {
-        stopTimer(minValidDuration: minValidDuration, calendarSyncEnabled: calendarSyncEnabled, selectedCalendarId: selectedCalendarId)
-        startTimer(for: eventType)
+    func switchEventType(to eventType: EventType, minValidDuration: TimeInterval = Constants.Settings.defaultMinDuration, calendarSyncEnabled: Bool = false, selectedCalendarId: String? = nil) async {
+        await stopTimer(minValidDuration: minValidDuration, calendarSyncEnabled: calendarSyncEnabled, selectedCalendarId: selectedCalendarId)
+        await startTimer(for: eventType)
     }
     
     // 内部计时器
@@ -263,7 +261,7 @@ class TimerService: ObservableObject {
     // MARK: - Live Activity 管理
     
     @available(iOS 16.1, *)
-    private func startLiveActivity(for eventType: EventType, startTime: Date) {
+    private func startLiveActivity(for eventType: EventType, startTime: Date) async {
         print("🚀 启动 Live Activity...")
         
         // 检查系统支持
@@ -275,8 +273,8 @@ class TimerService: ObservableObject {
             return
         }
         
-        // 先停止已有的 Activity
-        stopLiveActivity()
+        // 先停止已有的 Activity（等待完成）
+        await stopLiveActivity()
         
         // 获取分类信息
         let categoryName = eventType.category?.name ?? "未分类"
@@ -312,15 +310,13 @@ class TimerService: ObservableObject {
         }
     }
     
-    private func stopLiveActivity() {
+    private func stopLiveActivity() async {
         if #available(iOS 16.1, *) {
             guard let activity = currentActivity else { return }
             
-            Task {
-                await activity.end(dismissalPolicy: .immediate)
-                currentActivity = nil
-                print("🛑 Live Activity 已停止")
-            }
+            await activity.end(dismissalPolicy: .immediate)
+            currentActivity = nil
+            print("🛑 Live Activity 已停止")
         }
     }
 }

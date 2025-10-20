@@ -145,24 +145,30 @@ struct TimerView: View {
     }
     
     private func startTimer(for eventType: EventType) {
-        timerService.startTimer(for: eventType)
+        Task {
+            await timerService.startTimer(for: eventType)
+        }
     }
     
     private func stopTimer() {
-        timerService.stopTimer(
-            minValidDuration: minValidDuration,
-            calendarSyncEnabled: calendarSyncEnabled,
-            selectedCalendarId: selectedCalendarId.isEmpty ? nil : selectedCalendarId
-        )
+        Task {
+            await timerService.stopTimer(
+                minValidDuration: minValidDuration,
+                calendarSyncEnabled: calendarSyncEnabled,
+                selectedCalendarId: selectedCalendarId.isEmpty ? nil : selectedCalendarId
+            )
+        }
     }
     
     private func switchEventType(to eventType: EventType) {
-        timerService.switchEventType(
-            to: eventType,
-            minValidDuration: minValidDuration,
-            calendarSyncEnabled: calendarSyncEnabled,
-            selectedCalendarId: selectedCalendarId.isEmpty ? nil : selectedCalendarId
-        )
+        Task {
+            await timerService.switchEventType(
+                to: eventType,
+                minValidDuration: minValidDuration,
+                calendarSyncEnabled: calendarSyncEnabled,
+                selectedCalendarId: selectedCalendarId.isEmpty ? nil : selectedCalendarId
+            )
+        }
     }
 }
 

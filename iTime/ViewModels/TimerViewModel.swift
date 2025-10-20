@@ -52,20 +52,20 @@ class TimerViewModel: ObservableObject {
         loadData()
     }
     
-    func startTimer(for eventType: EventType) {
-        timerService.startTimer(for: eventType)
+    func startTimer(for eventType: EventType) async {
+        await timerService.startTimer(for: eventType)
     }
     
-    func stopTimer(minValidDuration: TimeInterval, calendarSyncEnabled: Bool, selectedCalendarId: String?) {
-        timerService.stopTimer(
+    func stopTimer(minValidDuration: TimeInterval, calendarSyncEnabled: Bool, selectedCalendarId: String?) async {
+        await timerService.stopTimer(
             minValidDuration: minValidDuration,
             calendarSyncEnabled: calendarSyncEnabled,
             selectedCalendarId: selectedCalendarId
         )
     }
     
-    func switchEventType(to eventType: EventType, minValidDuration: TimeInterval, calendarSyncEnabled: Bool, selectedCalendarId: String?) {
-        timerService.switchEventType(
+    func switchEventType(to eventType: EventType, minValidDuration: TimeInterval, calendarSyncEnabled: Bool, selectedCalendarId: String?) async {
+        await timerService.switchEventType(
             to: eventType,
             minValidDuration: minValidDuration,
             calendarSyncEnabled: calendarSyncEnabled,
