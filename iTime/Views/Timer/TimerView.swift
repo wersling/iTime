@@ -20,8 +20,20 @@ struct TimerView: View {
     @AppStorage(Constants.Settings.calendarSyncEnabled) private var calendarSyncEnabled: Bool = false
     @AppStorage(Constants.Settings.selectedCalendarId) private var selectedCalendarId: String = ""
     
-    @State private var showingAddEventType = false
     @State private var selectedCategory: EventCategory?
+    @State private var eventTypeFormMode: EventTypeFormMode?  // Sheet 状态：nil=关闭，.add/.edit=打开
+    
+    enum EventTypeFormMode: Identifiable {
+        case add(preselectedCategory: EventCategory?)
+        case edit(eventType: EventType)
+        
+        var id: String {
+            switch self {
+            case .add: return "add"
+            case .edit(let eventType): return "edit_\(eventType.id)"
+            }
+        }
+    }
     
     var body: some View {
         NavigationStack {
@@ -69,6 +81,9 @@ struct TimerView: View {
                                             onTap: {
                                                 handleEventTap(eventType)
                                             },
+                                            onEdit: {
+                                                editEventType(eventType)
+                                            },
                                             onDelete: {
                                                 deleteEventType(eventType)
                                             },
@@ -90,25 +105,42 @@ struct TimerView: View {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button {
                         selectedCategory = nil  // 清空预选分类
-                        showingAddEventType = true
+                        eventTypeFormMode = .add(preselectedCategory: nil)
                     } label: {
                         Image(systemName: "plus.circle.fill")
                             .font(.system(size: 22))
                     }
                 }
             }
-            .sheet(isPresented: $showingAddEventType) {
-                AddEventTypeSheet(
-                    categories: Array(categories),
-                    preselectedCategory: selectedCategory,
-                    onAdd: { name, category, color in
-                        addEventType(name: name, category: category, customColor: color)
-                        showingAddEventType = false
-                    },
-                    onCancel: {
-                        showingAddEventType = false
-                    }
-                )
+            .sheet(item: $eventTypeFormMode) { mode in
+                switch mode {
+                case .add(let preselectedCategory):
+                    AddEventTypeSheet(
+                        categories: Array(categories),
+                        preselectedCategory: preselectedCategory,
+                        editingEventType: nil,
+                        onSave: { name, category, color in
+                            addEventType(name: name, category: category, customColor: color)
+                            eventTypeFormMode = nil
+                        },
+                        onCancel: {
+                            eventTypeFormMode = nil
+                        }
+                    )
+                case .edit(let eventType):
+                    AddEventTypeSheet(
+                        categories: Array(categories),
+                        preselectedCategory: eventType.category,
+                        editingEventType: eventType,
+                        onSave: { name, category, color in
+                            updateEventType(eventType, name: name, category: category, customColor: color)
+                            eventTypeFormMode = nil
+                        },
+                        onCancel: {
+                            eventTypeFormMode = nil
+                        }
+                    )
+                }
             }
             .onAppear {
                 // 配置timer service
@@ -136,6 +168,17 @@ struct TimerView: View {
     
     private func archiveEventType(_ eventType: EventType) {
         eventType.isArchived = true
+        try? modelContext.save()
+    }
+    
+    private func editEventType(_ eventType: EventType) {
+        eventTypeFormMode = .edit(eventType: eventType)
+    }
+    
+    private func updateEventType(_ eventType: EventType, name: String, category: EventCategory, customColor: String?) {
+        eventType.name = name
+        eventType.category = category
+        eventType.customColorHex = customColor
         try? modelContext.save()
     }
     
@@ -180,17 +223,22 @@ struct TimerView: View {
     }
 }
 
-// 添加事件类型表单
+// 添加/编辑事件类型表单
 struct AddEventTypeSheet: View {
     let categories: [EventCategory]
     let preselectedCategory: EventCategory?
-    let onAdd: (String, EventCategory, String?) -> Void
+    let editingEventType: EventType?  // nil表示新建，非nil表示编辑
+    let onSave: (String, EventCategory, String?) -> Void
     let onCancel: () -> Void
     
     @State private var name = ""
     @State private var selectedCategory: EventCategory?
     @State private var useCustomColor = false
     @State private var customColor: Color = .blue
+    
+    private var isEditMode: Bool {
+        editingEventType != nil
+    }
     
     var body: some View {
         NavigationStack {
@@ -223,24 +271,35 @@ struct AddEventTypeSheet: View {
                     Text("不使用自定义颜色时，将使用分类的默认颜色")
                 }
             }
-            .navigationTitle("添加事件")
+            .navigationTitle(isEditMode ? "编辑事件" : "添加事件")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("取消", action: onCancel)
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("添加") {
+                    Button(isEditMode ? "保存" : "添加") {
                         guard let category = selectedCategory, !name.isEmpty else { return }
                         let colorHex = useCustomColor ? customColor.toHex() : nil
-                        onAdd(name, category, colorHex)
+                        onSave(name, category, colorHex)
                     }
                     .disabled(name.isEmpty || selectedCategory == nil)
                 }
             }
             .onAppear {
-                if selectedCategory == nil {
-                    selectedCategory = preselectedCategory ?? categories.first
+                // 编辑模式：加载现有数据
+                if let eventType = editingEventType {
+                    name = eventType.name
+                    selectedCategory = eventType.category
+                    if let colorHex = eventType.customColorHex {
+                        useCustomColor = true
+                        customColor = Color(hex: colorHex) ?? .blue
+                    }
+                } else {
+                    // 新建模式：使用预选分类或第一个分类
+                    if selectedCategory == nil {
+                        selectedCategory = preselectedCategory ?? categories.first
+                    }
                 }
             }
         }

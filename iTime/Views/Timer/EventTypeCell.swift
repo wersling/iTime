@@ -11,6 +11,7 @@ struct EventTypeCell: View {
     let eventType: EventType
     let isActive: Bool
     let onTap: () -> Void
+    let onEdit: (() -> Void)?  // 编辑回调
     let onDelete: (() -> Void)?
     let onArchive: (() -> Void)?  // 归档回调
     
@@ -71,6 +72,14 @@ struct EventTypeCell: View {
             .shadow(color: isActive ? eventType.displayColor.opacity(0.3) : .clear, radius: 8, x: 0, y: 4)
         }
         .contextMenu {
+            if let onEdit = onEdit {
+                Button {
+                    onEdit()
+                } label: {
+                    Label("编辑", systemImage: "pencil")
+                }
+            }
+            
             if let onArchive = onArchive {
                 Button {
                     onArchive()
@@ -103,8 +112,8 @@ struct EventTypeCell: View {
     let eventType = EventType(name: "编程", category: category)
     
     return HStack {
-        EventTypeCell(eventType: eventType, isActive: false, onTap: {}, onDelete: {}, onArchive: {})
-        EventTypeCell(eventType: eventType, isActive: true, onTap: {}, onDelete: nil, onArchive: nil)
+        EventTypeCell(eventType: eventType, isActive: false, onTap: {}, onEdit: {}, onDelete: {}, onArchive: {})
+        EventTypeCell(eventType: eventType, isActive: true, onTap: {}, onEdit: nil, onDelete: nil, onArchive: nil)
     }
     .padding()
 }
