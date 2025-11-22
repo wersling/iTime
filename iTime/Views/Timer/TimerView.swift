@@ -248,13 +248,23 @@ struct AddEventTypeSheet: View {
                 }
                 
                 Section("选择分类") {
-                    Picker("分类", selection: $selectedCategory) {
-                        ForEach(categories) { category in
-                            HStack {
-                                Image(systemName: category.icon)
-                                Text(category.name)
+                    NavigationLink {
+                        CategorySelectionView(selection: $selectedCategory)
+                    } label: {
+                        HStack {
+                            Text("分类")
+                            Spacer()
+                            if let category = selectedCategory {
+                                HStack {
+                                    Image(systemName: category.icon)
+                                        .foregroundColor(category.color)
+                                    Text(category.name)
+                                        .foregroundColor(.secondary)
+                                }
+                            } else {
+                                Text("选择分类")
+                                    .foregroundColor(.secondary)
                             }
-                            .tag(category as EventCategory?)
                         }
                     }
                 }
