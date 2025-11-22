@@ -23,7 +23,13 @@ class SettingsViewModel: ObservableObject {
     
     var notificationInterval: NotificationInterval {
         get { NotificationInterval(rawValue: notificationIntervalRawValue) ?? .minutes60 }
-        set { notificationIntervalRawValue = newValue.rawValue }
+        set { 
+            notificationIntervalRawValue = newValue.rawValue
+            // 设置变更后立即重新安排通知
+            Task { @MainActor in
+                TimerService.shared.rescheduleNotifications()
+            }
+        }
     }
     
     private let notificationService = NotificationService.shared

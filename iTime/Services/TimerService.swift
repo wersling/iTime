@@ -84,7 +84,7 @@ class TimerService: ObservableObject {
         startInternalTimer()
         
         // 根据用户设置重新安排定时提醒
-        scheduleNextNotification()
+        rescheduleNotifications()
         
         print("✅ 恢复计时器: \(record.eventType?.name ?? "未知"), 已运行 \(Int(elapsedTime))秒")
     }
@@ -133,7 +133,7 @@ class TimerService: ObservableObject {
         startInternalTimer()
         
         // 根据用户设置安排定时提醒
-        scheduleNextNotification()
+        rescheduleNotifications()
         
         // 启动 Live Activity
         await startLiveActivity(for: eventType, startTime: record.startTime)
@@ -227,8 +227,8 @@ class TimerService: ObservableObject {
         timer = nil
     }
     
-    // 根据用户设置批量安排定时提醒
-    private func scheduleNextNotification() {
+    // 根据用户设置重新安排定时提醒（公开方法，供设置变更时调用）
+    func rescheduleNotifications() {
         guard let record = currentRecord,
               let eventType = record.eventType else { return }
         
@@ -236,11 +236,16 @@ class TimerService: ObservableObject {
         let intervalRawValue = UserDefaults.standard.integer(forKey: Constants.Settings.notificationInterval)
         let interval = NotificationInterval(rawValue: intervalRawValue) ?? .minutes60
         
-        // 如果设置为「从不」，则不安排通知
-        guard let reminderInterval = interval.timeInterval else { return }
+        // 如果设置为「从不」，则取消现有通知
+        guard let reminderInterval = interval.timeInterval else {
+            Task {
+                await notificationService.cancelReminder()
+            }
+            return
+        }
         
         Task {
-            // 一次性安排 5 小时内的所有通知
+            // 一次性安排 5 小时内的所有通知（内部会先取消旧通知）
             await notificationService.scheduleReminders(
                 for: eventType.name,
                 startTime: record.startTime,
