@@ -17,6 +17,8 @@ struct CategoryManagementView: View {
     @State private var showAddSheet = false
     @State private var searchText = ""
     @State private var editMode: EditMode = .inactive
+    @State private var categoryToDelete: EventCategory?
+    @State private var showDeleteAlert = false
     
     var filteredCategories: [EventCategory] {
         if searchText.isEmpty {
@@ -51,7 +53,7 @@ struct CategoryManagementView: View {
                 // 在编辑模式下禁用普通点击，防止误触，或者让它行为一致
                 .disabled(editMode == .active)
             }
-            .onDelete(perform: deleteCategories)
+            .onDelete(perform: confirmDelete)
             .onMove(perform: moveCategories)
         }
         .environment(\.editMode, $editMode)
@@ -98,15 +100,33 @@ struct CategoryManagementView: View {
                 CategoryEditView(category: nil)
             }
         }
+        .alert("确认删除分类？", isPresented: $showDeleteAlert, presenting: categoryToDelete) { category in
+            Button("删除", role: .destructive) {
+                deleteCategory(category)
+            }
+            Button("取消", role: .cancel) {
+                categoryToDelete = nil
+            }
+        } message: { category in
+            Text("删除“\(category.name)”分类将同时删除其下所有事件。此操作不可撤销。")
+        }
     }
     
-    private func deleteCategories(offsets: IndexSet) {
+    private func confirmDelete(at offsets: IndexSet) {
+        // 这里我们只处理单选删除的情况，因为 List 的滑动删除一次只能删一个
+        if let index = offsets.first {
+            let category = filteredCategories[index]
+            categoryToDelete = category
+            showDeleteAlert = true
+        }
+    }
+    
+    private func deleteCategory(_ category: EventCategory) {
         withAnimation {
-            for index in offsets {
-                modelContext.delete(categories[index])
-            }
+            modelContext.delete(category)
             try? modelContext.save()
         }
+        categoryToDelete = nil
     }
     
     private func moveCategories(from source: IndexSet, to destination: Int) {
