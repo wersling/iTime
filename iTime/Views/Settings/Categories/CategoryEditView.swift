@@ -18,6 +18,7 @@ struct CategoryEditView: View {
     @State private var color: Color = .blue
     @State private var icon: String = "circle.fill"
     @State private var showIconPicker = false
+    @State private var isInitialized = false
     
     // 常用图标集合
     private let availableIcons = [
@@ -95,6 +96,8 @@ struct CategoryEditView: View {
             }
         }
         .onAppear {
+            guard !isInitialized else { return }
+            isInitialized = true
             if let category {
                 name = category.name
                 color = category.color

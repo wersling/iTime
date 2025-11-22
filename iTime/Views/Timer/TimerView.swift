@@ -10,6 +10,7 @@ import SwiftData
 
 struct TimerView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @StateObject private var timerService = TimerService.shared
     
     // 使用 @Query 直接查询数据，确保实时更新
@@ -22,6 +23,11 @@ struct TimerView: View {
     
     @State private var selectedCategory: EventCategory?
     @State private var eventTypeFormMode: EventTypeFormMode?  // Sheet 状态：nil=关闭，.add/.edit=打开
+    
+    // 根据设备类型计算网格列数
+    private var gridColumns: Int {
+        horizontalSizeClass == .regular ? 5 : 3
+    }
     
     enum EventTypeFormMode: Identifiable {
         case add(preselectedCategory: EventCategory?)
@@ -69,11 +75,7 @@ struct TimerView: View {
                                 .padding(.horizontal)
                                 
                                 // 事件类型网格
-                                LazyVGrid(columns: [
-                                    GridItem(.flexible()),
-                                    GridItem(.flexible()),
-                                    GridItem(.flexible())
-                                ], spacing: Constants.UI.gridSpacing) {
+                                LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: gridColumns), spacing: Constants.UI.gridSpacing) {
                                     ForEach(categoryEventTypes) { eventType in
                                         EventTypeCell(
                                             eventType: eventType,
@@ -235,6 +237,7 @@ struct AddEventTypeSheet: View {
     @State private var selectedCategory: EventCategory?
     @State private var useCustomColor = false
     @State private var customColor: Color = .blue
+    @State private var isInitialized = false
     
     private var isEditMode: Bool {
         editingEventType != nil
@@ -297,6 +300,9 @@ struct AddEventTypeSheet: View {
                 }
             }
             .onAppear {
+                guard !isInitialized else { return }
+                isInitialized = true
+                
                 // 编辑模式：加载现有数据
                 if let eventType = editingEventType {
                     name = eventType.name
