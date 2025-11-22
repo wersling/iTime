@@ -17,6 +17,7 @@ struct CategoryEditView: View {
     @State private var name: String = ""
     @State private var color: Color = .blue
     @State private var icon: String = "circle.fill"
+    @State private var showIconPicker = false
     
     // 常用图标集合
     private let availableIcons = [
@@ -27,6 +28,16 @@ struct CategoryEditView: View {
         "person.fill", "clock.fill", "tag.fill", "bookmark.fill"
     ]
     
+    private var displayedIcons: [String] {
+        var icons = availableIcons
+        // 如果当前图标不在预设列表中，将其添加到开头显示
+        // 并且排除默认的 "circle.fill" (如果它不在可用列表中)，避免显示空白/默认占位符
+        if !icons.contains(icon) && icon != "circle.fill" {
+            icons.insert(icon, at: 0)
+        }
+        return icons
+    }
+    
     var body: some View {
         Form {
             Section("基本信息") {
@@ -35,7 +46,7 @@ struct CategoryEditView: View {
             
             Section("图标") {
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 44))], spacing: 10) {
-                    ForEach(availableIcons, id: \.self) { iconName in
+                    ForEach(displayedIcons, id: \.self) { iconName in
                         Image(systemName: iconName)
                             .font(.title2)
                             .frame(width: 44, height: 44)
@@ -43,8 +54,21 @@ struct CategoryEditView: View {
                             .foregroundColor(icon == iconName ? color : .primary)
                             .clipShape(RoundedRectangle(cornerRadius: 8))
                             .onTapGesture {
-                                icon = iconName
+                                withAnimation {
+                                    icon = iconName
+                                }
                             }
+                    }
+                    
+                    Button {
+                        showIconPicker = true
+                    } label: {
+                        Image(systemName: "ellipsis")
+                            .font(.title2)
+                            .frame(width: 44, height: 44)
+                            .background(Color(uiColor: .secondarySystemBackground))
+                            .foregroundColor(.primary)
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
                     }
                 }
                 .padding(.vertical, 5)
@@ -76,6 +100,9 @@ struct CategoryEditView: View {
                 color = category.color
                 icon = category.icon
             }
+        }
+        .sheet(isPresented: $showIconPicker) {
+            IconPickerView(selection: $icon)
         }
     }
     
