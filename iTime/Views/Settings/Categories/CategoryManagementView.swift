@@ -15,11 +15,23 @@ struct CategoryManagementView: View {
     
     @State private var editingCategory: EventCategory?
     @State private var showAddSheet = false
+    @State private var searchText = ""
+    @State private var editMode: EditMode = .inactive
+    
+    var filteredCategories: [EventCategory] {
+        if searchText.isEmpty {
+            return categories
+        } else {
+            return categories.filter { $0.name.localizedCaseInsensitiveContains(searchText) }
+        }
+    }
     
     var body: some View {
         List {
-            ForEach(categories) { category in
+            ForEach(filteredCategories) { category in
                 Button {
+                    // 编辑模式下点击行通常是选择，但在这种管理视图中，
+                    // 我们保持点击进入编辑详情的逻辑，或者仅允许通过菜单编辑
                     editingCategory = category
                 } label: {
                     HStack {
@@ -29,32 +41,50 @@ struct CategoryManagementView: View {
                         Text(category.name)
                             .foregroundColor(.primary)
                         Spacer()
-                        Image(systemName: "chevron.right")
-                            .font(.caption)
-                            .foregroundColor(.gray)
+                        if editMode == .inactive {
+                            Image(systemName: "chevron.right")
+                                .font(.caption)
+                                .foregroundColor(.gray)
+                        }
                     }
                 }
+                // 在编辑模式下禁用普通点击，防止误触，或者让它行为一致
+                .disabled(editMode == .active)
             }
             .onDelete(perform: deleteCategories)
             .onMove(perform: moveCategories)
         }
+        .environment(\.editMode, $editMode)
         .navigationTitle("管理分类")
         .navigationBarTitleDisplayMode(.inline)
+        .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always), prompt: "搜索分类")
         .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button("关闭") {
+                    dismiss()
+                }
+            }
+            
             ToolbarItem(placement: .navigationBarTrailing) {
-                HStack {
-                    EditButton()
-                    Button {
-                        showAddSheet = true
-                    } label: {
-                        Image(systemName: "plus")
+                Button(editMode == .active ? "完成" : "编辑") {
+                    withAnimation {
+                        editMode = editMode == .active ? .inactive : .active
                     }
                 }
             }
             
-            ToolbarItem(placement: .navigationBarLeading) {
-                Button("完成") {
-                    dismiss()
+            ToolbarItem(placement: .bottomBar) {
+                HStack {
+                    Button {
+                        showAddSheet = true
+                    } label: {
+                        HStack {
+                            Image(systemName: "plus.circle.fill")
+                            Text("新建分类")
+                        }
+                        .font(.headline)
+                    }
+                    Spacer()
                 }
             }
         }
